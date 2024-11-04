@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Ridhusbokning</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    h1, h2 { color: #333; }
+    .time-slot { padding: 10px; margin: 5px 0; border: 1px solid #ddd; cursor: pointer; }
+    .booked { background-color: #f8d7da; cursor: not-allowed; color: #721c24; }
+  </style>
+</head>
+<body>
+  <h1>Ridhusbokning</h1>
+  <p>Välj en tid att boka för den valda dagen. Varje tidslucka kan ha upp till 4 bokningar.</p>
+
+  <!-- Välj en dag att visa tillgängliga tider för -->
+  <h2>Välj en dag:</h2>
+  <input type="date" id="datePicker" onchange="loadTimeSlots()">
+
+  <h2>Tillgängliga tider</h2>
+  <div id="timeSlots"></div>
+
+  <!-- Firebase SDK version 8.x -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    // Firebase-konfiguration från Firebase Console
+    const firebaseConfig = {
+      apiKey: "API_KEY",
+      authDomain: "bokning---ridhus.firebaseapp.com",
+      projectId: "bokning---ridhus",
+      storageBucket: "bokning---ridhus.firebasestorage.app",
+      messagingSenderId: "950961153911",
+      appId: "1:950961153911:web:8048686c4b5bf6ff18a372",
+      measurementId: "G-1NPSSBC2CW"
+    };
+
+    // Initialisera Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Fördefinierade tider för bokning
+    const predefinedTimeSlots = ["16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
+
+    // Ladda tillgängliga tider för vald dag
+    function loadTimeSlots() {
+      const selectedDate = document.getElementById("datePicker").value;
+      const timeSlotsContainer = document.getElementById("timeSlots");
+      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
+
+      if (selectedDate) {
+        predefinedTimeSlots.forEach((slot) => {
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "time-slot";
+          slotDiv.textContent = slot;
+          slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
+
+          // Kontrollera hur många som har bokat för denna tid
+          db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
+            if (doc.exists) {
+              const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
+              if (bookingsCount >= 4) {
+                slotDiv.classList.add("booked");
+                slotDiv.textContent += " - Fullbokad";
+                slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+              } else {
+                slotDiv.textContent += ` - ${4 - bookingsCount} platser kvar`;
+              }
+            } else {
+              slotDiv.textContent += " - 4 platser kvar";
+            }
+          });
+
+          timeSlotsContainer.appendChild(slotDiv);
+        });
+      }
+    }
+
+    // Boka en tid
+    function bookTimeSlot(date, timeSlot) {
+      const name = prompt("Ange ditt namn för att boka tiden:");
+      if (name) {
+        const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+
+        bookingRef.get().then((doc) => {
+          if (doc.exists) {
+            const currentBookings = doc.data().bookings || [];
+            if (currentBookings.length < 4) {
+              currentBookings.push({ name: name, timestamp: new Date() });
+              bookingRef.set({ bookings: currentBookings }).then(() => {
+                alert("Bokning lyckades!");
+                loadTimeSlots(); // Uppdatera tiden som bokad
+              });
+            } else {
+              alert("Denna tid är fullbokad.");
+            }
+          } else {
+            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
+              alert("Bokning lyckades!");
+              loadTimeSlots(); // Uppdatera tiden som bokad
+            });
+          }
+        }).catch((error) => {
+          console.error("Fel vid bokning: ", error);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
