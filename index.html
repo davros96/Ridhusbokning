@@ -8,11 +8,15 @@
     h1, h2 { color: #333; }
     .time-slot { padding: 10px; margin: 5px 0; border: 1px solid #ddd; cursor: pointer; }
     .booked { background-color: #f8d7da; cursor: not-allowed; color: #721c24; }
+    img { width: 100%; max-width: 800px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
-  <h1>Ridhusbokning</h1>
-  <p>Välj en tid att boka för den valda dagen. Varje tidslucka kan ha upp till 4 bokningar.</p>
+  <h1>Välkommen till Ridhusbokningen</h1>
+  <p>Boka tider och få information här.</p>
+
+  <!-- Lägg till bilden -->
+  <img src="ridhus.jpeg" alt="Ridhusbild">
 
   <!-- Välj en dag att visa tillgängliga tider för -->
   <h2>Välj en dag:</h2>
@@ -42,7 +46,7 @@
     const db = firebase.firestore();
 
     // Fördefinierade tider för bokning
-    const predefinedTimeSlots = ["16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
+    const predefinedTimeSlots = ["16:00-17:00", "17:00-18:00", "18:00-19:00"];
 
     // Ladda tillgängliga tider för vald dag
     function loadTimeSlots() {
