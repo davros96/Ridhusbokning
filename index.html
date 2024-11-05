@@ -22,27 +22,6 @@
       padding: 20px;
       margin-top: 20px;
     }
-    .image-container img {
-      width: 100%;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-      color: #555;
-    }
-    input[type="date"] {
-      width: calc(100% - 20px);
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 16px;
-      color: #333;
-      background-color: #fafafa;
-    }
     .time-slot {
       display: flex;
       justify-content: space-between;
@@ -64,15 +43,10 @@
   </style>
 </head>
 <body>
-  <div class="image-container">
-    <img src="ridhus.jpeg" alt="Bild på ridhuset">
-  </div>
-
   <h1>Ridhusbokning</h1>
 
   <div class="container">
     <h2>Välj en dag att boka</h2>
-    <label for="datePicker">Datum:</label>
     <input type="date" id="datePicker" onchange="loadTimeSlots()">
   </div>
 
@@ -104,13 +78,13 @@
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadTimeSlots(); // Ladda tider för dagens datum
+      loadTimeSlots();
     }
 
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
-      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
+      timeSlotsContainer.innerHTML = "";
 
       if (selectedDate) {
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
@@ -118,17 +92,17 @@
             timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
           } else {
             snapshot.forEach((doc) => {
-              const slot = doc.id;
+              const timeSlot = doc.id;
+              const maxBookings = doc.data().maxBookings || 4; // Default till 4 om maxBookings inte finns
               const slotDiv = document.createElement("div");
               slotDiv.className = "time-slot";
-              slotDiv.textContent = slot;
-              slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
+              slotDiv.textContent = timeSlot;
+              slotDiv.onclick = () => bookTimeSlot(selectedDate, timeSlot, maxBookings);
 
-              // Kontrollera max antal bokningar
-              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((bookingDoc) => {
-                if (bookingDoc.exists) {
-                  const bookingsCount = bookingDoc.data().bookings ? bookingDoc.data().bookings.length : 0;
-                  const maxBookings = doc.data().maxBookings || 4; // Hämta max bokningar
+              // Kontrollera antalet bokningar för denna tid
+              db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((doc) => {
+                if (doc.exists) {
+                  const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
                   if (bookingsCount >= maxBookings) {
                     slotDiv.classList.add("booked");
                     slotDiv.textContent += " - Fullbokad";
@@ -137,7 +111,7 @@
                     slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
                   }
                 } else {
-                  slotDiv.textContent += " - 4 platser kvar"; // Standard
+                  slotDiv.textContent += ` - ${maxBookings} platser kvar`;
                 }
               });
 
@@ -150,7 +124,7 @@
       }
     }
 
-    function bookTimeSlot(date, timeSlot) {
+    function bookTimeSlot(date, timeSlot, maxBookings) {
       const name = prompt("Ange ditt namn för att boka tiden:");
       if (name) {
         const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
@@ -158,12 +132,11 @@
         bookingRef.get().then((doc) => {
           if (doc.exists) {
             const currentBookings = doc.data().bookings || [];
-            const maxBookings = doc.data().maxBookings || 4; // Hämta max bokningar
             if (currentBookings.length < maxBookings) {
               currentBookings.push({ name: name, timestamp: new Date() });
               bookingRef.set({ bookings: currentBookings }).then(() => {
                 alert("Bokning lyckades!");
-                loadTimeSlots(); // Uppdatera tiden som bokad
+                loadTimeSlots();
               });
             } else {
               alert("Denna tid är fullbokad.");
@@ -171,7 +144,7 @@
           } else {
             bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
               alert("Bokning lyckades!");
-              loadTimeSlots(); // Uppdatera tiden som bokad
+              loadTimeSlots();
             });
           }
         }).catch((error) => {
@@ -180,7 +153,6 @@
       }
     }
 
-    // Sätt dagens datum när sidan laddas
     window.onload = setDefaultDate;
   </script>
 </body>
