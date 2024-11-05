@@ -82,34 +82,6 @@
     .delete-button:hover {
       background-color: #c82333;
     }
-
-    /* Media Query för mobiler (skärmar mindre än 600px) */
-    @media (max-width: 600px) {
-      h1, h2 {
-        font-size: 1.5em;
-      }
-      .container {
-        padding: 15px;
-      }
-      .button {
-        font-size: 14px;
-        padding: 10px;
-      }
-      input[type="date"], select {
-        font-size: 14px;
-      }
-      .time-slot {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
-
-    /* Media Query för större skärmar (datorer och surfplattor) */
-    @media (min-width: 601px) {
-      body {
-        max-width: 800px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -126,6 +98,14 @@
       
       <label for="endTime">Sluttid:</label>
       <select id="endTime"></select>
+
+      <label for="maxBookings">Max bokningar per tidslucka:</label>
+      <select id="maxBookings">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+      </select>
       
       <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
     </div>
@@ -211,6 +191,7 @@
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
       const endTime = document.getElementById("endTime").value;
+      const maxBookings = document.getElementById("maxBookings").value;
 
       if (!date || !startTime || !endTime) {
         alert("Välj datum, starttid och sluttid.");
@@ -230,7 +211,7 @@
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
-      availableTimeRef.set({ isAvailable: true }).then(() => {
+      availableTimeRef.set({ isAvailable: true, maxBookings: maxBookings }).then(() => {
         console.log("Tillgänglig tid tillagd:", date, timeSlot);
         loadAvailableTimes();
       }).catch((error) => {
