@@ -4,62 +4,76 @@
   <meta charset="UTF-8">
   <title>Ridhusbokning</title>
   <style>
-    /* Bakgrundsbild */
+    /* Grundläggande stil för hela sidan */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background: url('ridhus.jpeg') no-repeat center center fixed;
+      background-image: url('ridhus.jpeg');
       background-size: cover;
+      background-position: center;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      box-sizing: border-box;
     }
-    /* Innehållsbehållare */
+    /* Huvudcontainer för bokningssektionen */
     .container {
       background-color: rgba(255, 255, 255, 0.85);
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 30px; /* Ökar padding för att skapa en luftigare känsla */
-      max-width: 800px; /* Gör rutan större i x-led */
-      width: 100%;
+      padding: 20px;
+      max-width: 90%;
+      width: 400px;
+      margin: auto;
       text-align: center;
-      box-sizing: border-box;
-      margin: 0 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    h1, h2 {
+    h1 {
       color: #333;
-      text-align: center;
+      margin-bottom: 20px;
+    }
+    /* Stilar för sektionerna i containern */
+    .input-group {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      width: 100%;
+      max-width: 350px;
+      margin-bottom: 20px;
     }
     input[type="date"] {
-      width: calc(100% - 20px);
+      width: 100%;
       padding: 10px;
-      margin-top: 5px;
+      font-size: 16px;
       border: 1px solid #ddd;
       border-radius: 4px;
-      font-size: 16px;
-      color: #333;
-      background-color: #fafafa;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
     }
     .time-slot {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      width: 100%;
       padding: 10px;
-      margin: 5px 20px;
+      margin: 5px 0;
       border: 1px solid #ddd;
       border-radius: 4px;
       background-color: #fafafa;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
-      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: center;
     }
-    .booked {
-      background-color: #f8d7da;
-      cursor: not-allowed;
-      color: #721c24;
+    /* Media Query för mobiler */
+    @media (max-width: 600px) {
+      .container {
+        width: 95%;
+      }
+      .input-group, .time-slot {
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -67,22 +81,22 @@
   <div class="container">
     <h1>Ridhusbokning</h1>
 
-    <div class="container">
-      <h2>Välj en dag att boka</h2>
+    <div class="input-group">
+      <label for="datePicker">Välj en dag att boka:</label>
       <input type="date" id="datePicker" onchange="loadTimeSlots()">
     </div>
 
-    <div class="container">
+    <div class="input-group">
       <h2>Tillgängliga tider</h2>
       <div id="timeSlots"></div>
     </div>
   </div>
 
-  <!-- Firebase SDK version 8.x -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
+    // Firebase-konfiguration från Firebase Console
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -93,24 +107,27 @@
       measurementId: "G-1NPSSBC2CW"
     };
 
+    // Initialisera Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Sätt dagens datum som standard
     function setDefaultDate() {
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadTimeSlots();
+      loadTimeSlots(); // Ladda tider för dagens datum
     }
 
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
-      timeSlotsContainer.innerHTML = "";
+      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
 
       if (selectedDate) {
+        // Hämta tillgängliga tider för valt datum från Firestore
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
           if (snapshot.empty) {
             timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
@@ -120,21 +137,16 @@
               const slotDiv = document.createElement("div");
               slotDiv.className = "time-slot";
               slotDiv.textContent = slot;
-              slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
 
+              // Kontrollera hur många som har bokat för denna tid
               db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
-                if (doc.exists) {
-                  const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
-                  const maxBookings = doc.data().maxBookings || 4;
-                  if (bookingsCount >= maxBookings) {
-                    slotDiv.classList.add("booked");
-                    slotDiv.textContent += " - Fullbokad";
-                    slotDiv.onclick = null;
-                  } else {
-                    slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
-                  }
+                const maxBookings = doc.data()?.maxBookings || 4;
+                const bookingsCount = doc.data()?.bookings ? doc.data().bookings.length : 0;
+                if (bookingsCount >= maxBookings) {
+                  slotDiv.classList.add("booked");
+                  slotDiv.textContent += " - Fullbokad";
                 } else {
-                  slotDiv.textContent += " - 4 platser kvar";
+                  slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
                 }
               });
 
@@ -147,36 +159,7 @@
       }
     }
 
-    function bookTimeSlot(date, timeSlot) {
-      const name = prompt("Ange ditt namn för att boka tiden:");
-      if (name) {
-        const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-
-        bookingRef.get().then((doc) => {
-          if (doc.exists) {
-            const currentBookings = doc.data().bookings || [];
-            const maxBookings = doc.data().maxBookings || 4;
-            if (currentBookings.length < maxBookings) {
-              currentBookings.push({ name: name, timestamp: new Date() });
-              bookingRef.set({ bookings: currentBookings }).then(() => {
-                alert("Bokning lyckades!");
-                loadTimeSlots();
-              });
-            } else {
-              alert("Denna tid är fullbokad.");
-            }
-          } else {
-            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
-              alert("Bokning lyckades!");
-              loadTimeSlots();
-            });
-          }
-        }).catch((error) => {
-          console.error("Fel vid bokning: ", error);
-        });
-      }
-    }
-
+    // Sätt dagens datum när sidan laddas
     window.onload = setDefaultDate;
   </script>
 </body>
