@@ -175,7 +175,7 @@
               slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
 
               // Kontrollera hur många som har bokat för denna tid
-              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
+              db.collection("availableTimes").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
                 if (doc.exists) {
                   const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
                   const maxBookings = doc.data().maxBookings || 4;
@@ -232,15 +232,15 @@
     function bookTimeSlot(date, timeSlot) {
       const name = prompt("Ange ditt namn för att boka tiden:");
       if (name) {
-        const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+        const bookingRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
         bookingRef.get().then((doc) => {
           if (doc.exists) {
             const currentBookings = doc.data().bookings || [];
-            const maxBookings = doc.data().maxBookings || 4;
+            const maxBookings = doc.data().maxBookings;
             if (currentBookings.length < maxBookings) {
               currentBookings.push({ name: name, timestamp: new Date() });
-              bookingRef.set({ bookings: currentBookings, maxBookings: maxBookings }).then(() => {
+              bookingRef.set({ ...doc.data(), bookings: currentBookings }).then(() => {
                 alert("Bokning lyckades!");
                 loadTimeSlots(); // Uppdatera tiden som bokad
               });
