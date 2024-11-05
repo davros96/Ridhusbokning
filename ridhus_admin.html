@@ -4,19 +4,92 @@
   <meta charset="UTF-8">
   <title>Ridhus Admin Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
-    h1, h2 { color: #333; }
-    .available-times, .booking-list { margin: 20px 0; }
-    label, input, button, select { display: block; margin: 10px 0; }
-    .time-slot { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; padding: 5px; border: 1px solid #ddd; }
-    .delete-button { background-color: #f44336; color: white; border: none; padding: 5px; cursor: pointer; }
-    .booked-info { color: #721c24; font-style: italic; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-top: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+      color: #555;
+    }
+    input[type="date"], select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      color: #333;
+      background-color: #fafafa;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #ffffff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-align: center;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    .time-slot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fafafa;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      color: #333;
+    }
+    .delete-button {
+      padding: 8px 16px;
+      font-size: 14px;
+      color: #ffffff;
+      background-color: #dc3545;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .delete-button:hover {
+      background-color: #c82333;
+    }
+    .booked-info {
+      color: #721c24;
+      font-style: italic;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <h1>Adminpanel för Ridhusbokning</h1>
 
-  <div id="adminContent" style="display: none;">
+  <div id="adminContent" class="container" style="display: none;">
     <h2>Lägg till en specifik tillgänglig tid</h2>
     <div class="available-times">
       <label for="availableDate">Datum:</label>
@@ -28,9 +101,11 @@
       <label for="endTime">Sluttid:</label>
       <select id="endTime"></select>
       
-      <button onclick="addAvailableTime()">Lägg till specifik tid</button>
+      <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
     </div>
+  </div>
 
+  <div id="availableTimesContainer" class="container" style="display: none;">
     <h2>Tillgängliga tider för vald dag</h2>
     <input type="date" id="datePicker" onchange="loadAvailableTimes()">
     <div id="availableTimeSlots" class="available-times"></div>
@@ -41,11 +116,12 @@
 
   <script>
     // Kontrollera åtkomst med kod
-    const accessCode = "dinhemligakod"; // Ändra "dinhemligakod" till din egen kod
+    const accessCode = "0570"; // Koden för åtkomst
     const userCode = prompt("Ange åtkomstkod:");
 
     if (userCode === accessCode) {
       document.getElementById("adminContent").style.display = "block";
+      document.getElementById("availableTimesContainer").style.display = "block";
     } else {
       alert("Fel kod. Åtkomst nekas.");
       window.location.href = "https://www.example.com"; // Skickar användaren till en annan sida om de anger fel kod
@@ -92,7 +168,7 @@
       const [endHour, endMinute] = endTime.split(":").map(Number);
       const startDate = new Date(0, 0, 0, startHour, startMinute);
       const endDate = new Date(0, 0, 0, endHour, endMinute);
-      const timeDifference = (endDate - startDate) / (1000 * 60); 
+      const timeDifference = (endDate - startDate) / (1000 * 60);
 
       if (timeDifference < 30) {
         alert("Tidsluckan måste vara minst 30 minuter.");
