@@ -16,28 +16,41 @@
 <body>
   <h1>Adminpanel för Ridhusbokning</h1>
 
-  <h2>Lägg till en specifik tillgänglig tid</h2>
-  <div class="available-times">
-    <label for="availableDate">Datum:</label>
-    <input type="date" id="availableDate">
-    
-    <label for="startTime">Starttid:</label>
-    <select id="startTime"></select>
-    
-    <label for="endTime">Sluttid:</label>
-    <select id="endTime"></select>
-    
-    <button onclick="addAvailableTime()">Lägg till specifik tid</button>
-  </div>
+  <div id="adminContent" style="display: none;">
+    <h2>Lägg till en specifik tillgänglig tid</h2>
+    <div class="available-times">
+      <label for="availableDate">Datum:</label>
+      <input type="date" id="availableDate">
+      
+      <label for="startTime">Starttid:</label>
+      <select id="startTime"></select>
+      
+      <label for="endTime">Sluttid:</label>
+      <select id="endTime"></select>
+      
+      <button onclick="addAvailableTime()">Lägg till specifik tid</button>
+    </div>
 
-  <h2>Tillgängliga tider för vald dag</h2>
-  <input type="date" id="datePicker" onchange="loadAvailableTimes()">
-  <div id="availableTimeSlots" class="available-times"></div>
+    <h2>Tillgängliga tider för vald dag</h2>
+    <input type="date" id="datePicker" onchange="loadAvailableTimes()">
+    <div id="availableTimeSlots" class="available-times"></div>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
+    // Kontrollera åtkomst med kod
+    const accessCode = "dinhemligakod"; // Ändra "dinhemligakod" till din egen kod
+    const userCode = prompt("Ange åtkomstkod:");
+
+    if (userCode === accessCode) {
+      document.getElementById("adminContent").style.display = "block";
+    } else {
+      alert("Fel kod. Åtkomst nekas.");
+      window.location.href = "https://www.example.com"; // Skickar användaren till en annan sida om de anger fel kod
+    }
+
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -51,7 +64,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Generera tider för dropdown
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
       const endTimeDropdown = document.getElementById("endTime");
@@ -66,7 +78,6 @@
       }
     }
 
-    // Lägg till en tillgänglig tid med vald start- och sluttid
     function addAvailableTime() {
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
@@ -77,12 +88,11 @@
         return;
       }
 
-      // Kontrollera att tidsluckan är minst 30 minuter
       const [startHour, startMinute] = startTime.split(":").map(Number);
       const [endHour, endMinute] = endTime.split(":").map(Number);
       const startDate = new Date(0, 0, 0, startHour, startMinute);
       const endDate = new Date(0, 0, 0, endHour, endMinute);
-      const timeDifference = (endDate - startDate) / (1000 * 60); // Skillnad i minuter
+      const timeDifference = (endDate - startDate) / (1000 * 60); 
 
       if (timeDifference < 30) {
         alert("Tidsluckan måste vara minst 30 minuter.");
@@ -94,17 +104,16 @@
 
       availableTimeRef.set({ isAvailable: true }).then(() => {
         console.log("Tillgänglig tid tillagd:", date, timeSlot);
-        loadAvailableTimes(); // Uppdatera listan
+        loadAvailableTimes();
       }).catch((error) => {
         console.error("Fel vid tilläggning av tillgänglig tid:", error);
       });
     }
 
-    // Ladda och visa tillgängliga tider samt bokningsinformation för ett specifikt datum
     function loadAvailableTimes() {
       const selectedDate = document.getElementById("datePicker").value;
       const availableTimeSlots = document.getElementById("availableTimeSlots");
-      availableTimeSlots.innerHTML = ""; // Rensa tidigare visade tider
+      availableTimeSlots.innerHTML = "";
 
       if (selectedDate) {
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
@@ -118,7 +127,6 @@
               timeDiv.className = "time-slot";
               timeDiv.textContent = timeSlot;
 
-              // Hämta bokningsinformation från `bookings`
               db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((bookingDoc) => {
                 if (bookingDoc.exists) {
                   const bookings = bookingDoc.data().bookings || [];
@@ -133,7 +141,6 @@
                 console.error("Fel vid hämtning av bokningsinformation:", error);
               });
 
-              // Lägg till en knapp för att ta bort tillgängliga tider
               const deleteButton = document.createElement("button");
               deleteButton.textContent = "Ta bort";
               deleteButton.className = "delete-button";
@@ -150,17 +157,15 @@
       }
     }
 
-    // Ta bort en specifik tillgänglig tid
     function deleteAvailableTime(date, timeSlot) {
       db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete().then(() => {
         console.log("Tiden har tagits bort:", date, timeSlot);
-        loadAvailableTimes(); // Uppdatera listan
+        loadAvailableTimes();
       }).catch((error) => {
         console.error("Fel vid borttagning av tid:", error);
       });
     }
 
-    // Initiera dropdown-menyerna och ladda befintliga tider
     populateTimeDropdowns();
     loadAvailableTimes();
   </script>
