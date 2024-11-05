@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Ridhusbokning</title>
+  <title>Ridhusbokning Lillälven</title>
   <style>
     /* Grundläggande stil för alla enheter */
     body {
@@ -53,6 +53,17 @@
       background-color: #fafafa;
       box-sizing: border-box;
     }
+    .instruction-box {
+      background-color: #e9f7ef;
+      border: 1px solid #28a745;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      text-align: left;
+      width: 100%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
+    }
     .time-slot {
       padding: 10px;
       margin: 10px auto;
@@ -70,19 +81,6 @@
       cursor: not-allowed;
       color: #721c24;
     }
-    .instruction-box {
-      background-color: #e9f7ef;
-      border-left: 6px solid #28a745;
-      padding: 15px;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 400px; /* Matcha max-width med container */
-      border-radius: 5px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      color: #155724;
-      font-size: 15px;
-      text-align: left; /* Textjustera */
-    }
 
     /* Media Query för mobiler (skärmar mindre än 600px) */
     @media (max-width: 600px) {
@@ -98,15 +96,12 @@
       input[type="date"] {
         font-size: 14px;
       }
-      .instruction-box {
-        font-size: 14px; /* Justera textstorlek */
-      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Ridhusbokning</h1>
+    <h1>Ridhusbokning Lillälven</h1>
     <div class="instruction-box">
       <h2>Instruktioner</h2>
       <p>1. Välj ett datum för bokning.</p>
