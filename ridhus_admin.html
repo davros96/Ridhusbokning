@@ -116,15 +116,16 @@
 
   <script>
     // Kontrollera åtkomst med kod
-    const accessCode = "0570"; // Koden för åtkomst
+    const accessCode = "0570"; // Åtkomstkoden
     const userCode = prompt("Ange åtkomstkod:");
 
-    if (userCode === accessCode) {
+    // Kontrollera om användaren angav rätt kod
+    if (userCode && userCode.trim() === accessCode) {
       document.getElementById("adminContent").style.display = "block";
       document.getElementById("availableTimesContainer").style.display = "block";
     } else {
       alert("Fel kod. Åtkomst nekas.");
-      window.location.href = "https://www.example.com"; // Skickar användaren till en annan sida om de anger fel kod
+      window.location.href = "https://www.example.com"; // Omdirigering vid fel kod
     }
 
     const firebaseConfig = {
