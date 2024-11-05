@@ -10,6 +10,29 @@
       margin: auto;
       padding: 20px;
       background-color: #f4f4f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .instruction-box {
+      background-color: #e9f7ef;
+      border-left: 6px solid #28a745;
+      padding: 20px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 700px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .instruction-box h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #155724;
+    }
+    .instruction-box p {
+      margin: 5px 0;
+      font-size: 15px;
+      color: #155724;
     }
     h1, h2 {
       color: #333;
@@ -21,6 +44,8 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
       margin-top: 20px;
+      width: 100%;
+      max-width: 700px;
     }
     .button {
       padding: 10px 20px;
@@ -84,11 +109,19 @@
   </style>
 </head>
 <body>
+  <div class="instruction-box">
+    <h2>Instruktioner för Adminpanelen</h2>
+    <p>1. Ange åtkomstkoden för att låsa upp adminpanelen.</p>
+    <p>2. Under "Lägg till en specifik tillgänglig tid", välj datum, start- och sluttid samt max antal bokningar för att skapa en ny bokningsbar tid.</p>
+    <p>3. Under "Tillgängliga tider för vald dag", kan du se alla skapade tider för en viss dag och ta bort dem om nödvändigt.</p>
+    <p>4. Under "Bokningar för vald tid", välj ett datum för att se vilka bokningar som är gjorda, samt ta bort specifika bokningar om det behövs.</p>
+  </div>
+
   <h1>Adminpanel för Ridhusbokning Lillälven</h1>
 
   <div id="accessCodeContainer">
     <h2>Ange åtkomstkod</h2>
-    <input type="password" id="accessCodeInput" placeholder="Ange kod" style="width: calc(100% - 20px); padding: 10px; border-radius: 4px; font-size: 16px;">
+    <input type="password" id="accessCodeInput" placeholder="Ange kod" onkeypress="if(event.key === 'Enter') checkAccessCode()" style="width: calc(100% - 20px); padding: 10px; border-radius: 4px; font-size: 16px;">
     <button class="button" onclick="checkAccessCode()">Bekräfta kod</button>
   </div>
 
@@ -118,7 +151,6 @@
     <div class="container">
       <h2>Tillgängliga tider för vald dag</h2>
       <input type="date" id="datePicker" onchange="loadAvailableTimes(); loadBookings();">
-      <button class="button" onclick="reloadContent()">Uppdatera</button>
       <div id="availableTimeSlots"></div>
     </div>
 
@@ -145,13 +177,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Eventlyssnare för Enter-tangenten
-    document.getElementById("accessCodeInput").addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        checkAccessCode();
-      }
-    });
-
     function checkAccessCode() {
       const enteredCode = document.getElementById("accessCodeInput").value;
       if (enteredCode === "0570") {
@@ -162,11 +187,6 @@
       } else {
         alert("Fel kod. Åtkomst nekas.");
       }
-    }
-
-    function reloadContent() {
-      loadAvailableTimes();
-      loadBookings();
     }
 
     function populateTimeDropdowns() {
@@ -187,7 +207,7 @@
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
       const endTime = document.getElementById("endTime").value;
-      const maxBookings = parseInt(document.getElementById("maxBookings").value, 10);
+      const maxBookings = document.getElementById("maxBookings").value;
 
       if (!date || !startTime || !endTime) {
         alert("Välj datum, starttid och sluttid.");
@@ -263,7 +283,7 @@
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
               const bookings = doc.data().bookings || [];
-              const maxBookings = doc.data().maxBookings || 4;
+              const maxBookings = bookings.length ? doc.data().maxBookings : "Max ej angivet";
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
