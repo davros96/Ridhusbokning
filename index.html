@@ -8,15 +8,11 @@
     h1, h2 { color: #333; }
     .time-slot { padding: 10px; margin: 5px 0; border: 1px solid #ddd; cursor: pointer; }
     .booked { background-color: #f8d7da; cursor: not-allowed; color: #721c24; }
-    img { width: 100%; max-width: 800px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
-  <h1>Välkommen till Lillälvens Ridhusbokning</h1>
-  <p>Boka tider och få information här.</p>
-
-  <!-- Lägg till bilden -->
-  <img src="ridhus.jpeg" alt="Ridhusbild">
+  <h1>Välkommen till Ridhusbokningen</h1>
+  <p>Välj en dag och boka en tillgänglig tid.</p>
 
   <!-- Välj en dag att visa tillgängliga tider för -->
   <h2>Välj en dag:</h2>
@@ -45,9 +41,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Fördefinierade tider för bokning
-    const predefinedTimeSlots = ["16:00-17:00", "17:00-18:00", "18:00-19:00"];
-
     // Ladda tillgängliga tider för vald dag
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
@@ -55,29 +48,38 @@
       timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
 
       if (selectedDate) {
-        predefinedTimeSlots.forEach((slot) => {
-          const slotDiv = document.createElement("div");
-          slotDiv.className = "time-slot";
-          slotDiv.textContent = slot;
-          slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
+        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((querySnapshot) => {
+          if (querySnapshot.empty) {
+            timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider för det valda datumet.</p>";
+          } else {
+            querySnapshot.forEach((doc) => {
+              const timeSlot = doc.id;
+              const slotDiv = document.createElement("div");
+              slotDiv.className = "time-slot";
+              slotDiv.textContent = timeSlot;
+              slotDiv.onclick = () => bookTimeSlot(selectedDate, timeSlot);
+              
+              // Kontrollera hur många som har bokat för denna tid
+              db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((timeDoc) => {
+                if (timeDoc.exists) {
+                  const bookingsCount = timeDoc.data().bookings ? timeDoc.data().bookings.length : 0;
+                  if (bookingsCount >= 4) {
+                    slotDiv.classList.add("booked");
+                    slotDiv.textContent += " - Fullbokad";
+                    slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+                  } else {
+                    slotDiv.textContent += ` - ${4 - bookingsCount} platser kvar`;
+                  }
+                } else {
+                  slotDiv.textContent += " - 4 platser kvar";
+                }
+              });
 
-          // Kontrollera hur många som har bokat för denna tid
-          db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
-            if (doc.exists) {
-              const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
-              if (bookingsCount >= 4) {
-                slotDiv.classList.add("booked");
-                slotDiv.textContent += " - Fullbokad";
-                slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
-              } else {
-                slotDiv.textContent += ` - ${4 - bookingsCount} platser kvar`;
-              }
-            } else {
-              slotDiv.textContent += " - 4 platser kvar";
-            }
-          });
-
-          timeSlotsContainer.appendChild(slotDiv);
+              timeSlotsContainer.appendChild(slotDiv);
+            });
+          }
+        }).catch((error) => {
+          console.error("Fel vid hämtning av tillgängliga tider: ", error);
         });
       }
     }
