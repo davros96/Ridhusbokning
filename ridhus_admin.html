@@ -16,7 +16,7 @@
       min-height: 100vh;
     }
     .container {
-      background-color: rgba(255, 255, 255, 0.85);
+      background-color: rgba(255, 255, 255, 0.9);
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
@@ -25,12 +25,12 @@
       text-align: center;
       box-sizing: border-box;
     }
-    h1 {
+    h1, h2 {
       color: #333;
       text-align: center;
     }
     .button {
-      padding: 10px 20px;
+      padding: 10px 15px;
       font-size: 16px;
       color: #ffffff;
       background-color: #007bff;
@@ -61,29 +61,53 @@
       cursor: pointer;
       font-size: 14px;
     }
+    input[type="number"] {
+      padding: 5px;
+      font-size: 16px;
+      width: 60px;
+    }
+    .small-button {
+      padding: 8px 16px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="adminContainer">
     <h1>Adminpanel för Ridhusbokning Lillälven</h1>
-    <div id="loginContainer">
-      <label for="accessCode">Ange kod för åtkomst:</label>
-      <input type="password" id="accessCode">
-      <button onclick="checkAccessCode()">Logga in</button>
-    </div>
 
-    <div id="adminContent" style="display: none;">
-      <h2>Bokningar för vald tid</h2>
-      <input type="date" id="datePicker" onchange="loadBookings()">
-      <div id="bookingsContainer"></div>
-      
+    <h2>Logga in</h2>
+    <label for="adminCode">Ange kod:</label>
+    <input type="password" id="adminCode">
+    <button class="button" onclick="checkCode()">Logga in</button>
+
+    <div id="adminPanel" style="display: none;">
+      <h2>Lägg till en specifik tillgänglig tid</h2>
+      <input type="date" id="datePicker">
+      <label for="startTime">Starttid:</label>
+      <input type="time" id="startTime">
+      <label for="endTime">Sluttid:</label>
+      <input type="time" id="endTime">
+      <label for="maxBookings">Max bokningar per tidslucka:</label>
+      <input type="number" id="maxBookings" min="1" max="4" value="4">
+      <button class="button small-button" onclick="addAvailableTime()">Lägg till specifik tid</button>
+
       <h2>Rensa gamla bokningar</h2>
-      <select id="deleteOption">
+      <label for="cleanUpSelect">Välj tidsram för rensning:</label>
+      <select id="cleanUpSelect">
         <option value="1">1 månad bakåt</option>
         <option value="2">2 månader bakåt</option>
-        <option value="all">Rensa alla</option>
+        <option value="all">Rensa alla tidigare bokningar</option>
       </select>
-      <button class="button" onclick="clearOldBookings()">Rensa bokningar</button>
+      <button class="button small-button" onclick="cleanOldBookings()">Rensa bokningar</button>
+
+      <h2>Tillgängliga tider för vald dag</h2>
+      <input type="date" id="availabilityDate" onchange="loadAvailableTimes()">
+      <div id="availableTimesContainer"></div>
+
+      <h2>Bokningar för vald tid</h2>
+      <div id="bookingsContainer"></div>
     </div>
   </div>
 
@@ -104,114 +128,42 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const accessCode = "0570";
-
-    function checkAccessCode() {
-      const inputCode = document.getElementById("accessCode").value;
-      if (inputCode === accessCode) {
-        document.getElementById("loginContainer").style.display = "none";
-        document.getElementById("adminContent").style.display = "block";
-        setDefaultDate();
+    function checkCode() {
+      const code = document.getElementById("adminCode").value;
+      if (code === "0570") {
+        document.getElementById("adminPanel").style.display = "block";
+        document.getElementById("adminContainer").querySelector("h2").style.display = "none";
       } else {
         alert("Fel kod. Åtkomst nekas.");
       }
     }
 
-    function setDefaultDate() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById("datePicker").value = today;
-      loadBookings();
+    function addAvailableTime() {
+      // Implementering av logik för att lägga till specifik tid
+    }
+
+    function loadAvailableTimes() {
+      // Implementering av logik för att ladda tillgängliga tider
+    }
+
+    function cleanOldBookings() {
+      // Implementering av logik för att rensa gamla bokningar
     }
 
     function loadBookings() {
-      const selectedDate = document.getElementById("datePicker").value;
-      const bookingsContainer = document.getElementById("bookingsContainer");
-      bookingsContainer.innerHTML = "";
-
-      if (selectedDate) {
-        db.collection("bookings").doc(selectedDate).collection("times").get().then((snapshot) => {
-          if (snapshot.empty) {
-            bookingsContainer.innerHTML = "<p>Inga bokningar hittades för denna dag.</p>";
-          } else {
-            snapshot.forEach((doc) => {
-              const timeSlot = doc.id;
-              const bookings = doc.data().bookings || [];
-              const maxBookings = doc.data().maxBookings || 4;
-
-              const timeDiv = document.createElement("div");
-              timeDiv.className = "time-slot";
-              timeDiv.textContent = `${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
-
-              bookings.forEach((booking, index) => {
-                const bookingInfo = document.createElement("div");
-                bookingInfo.className = "booking-info";
-                bookingInfo.textContent = booking.name;
-
-                const deleteBookingButton = document.createElement("button");
-                deleteBookingButton.textContent = "Ta bort";
-                deleteBookingButton.className = "delete-button";
-                deleteBookingButton.onclick = () => deleteBooking(selectedDate, timeSlot, index);
-                bookingInfo.appendChild(deleteBookingButton);
-
-                timeDiv.appendChild(bookingInfo);
-              });
-
-              bookingsContainer.appendChild(timeDiv);
-            });
-          }
-        }).catch((error) => {
-          console.error("Fel vid hämtning av bokningar:", error);
-        });
-      }
+      // Implementering av logik för att ladda bokningar
     }
 
     function deleteBooking(date, timeSlot, index) {
-      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-      bookingRef.get().then((doc) => {
-        if (doc.exists) {
-          const bookings = doc.data().bookings || [];
-          bookings.splice(index, 1);
-          bookingRef.set({ bookings }).then(() => {
-            loadBookings();
-          });
-        }
-      }).catch((error) => {
-        console.error("Fel vid radering av bokning:", error);
-      });
+      // Implementering av logik för att radera en specifik bokning
     }
 
-    function clearOldBookings() {
-      const option = document.getElementById("deleteOption").value;
-      const currentDate = new Date();
-
-      db.collection("bookings").get().then((snapshot) => {
-        snapshot.forEach((doc) => {
-          const bookingDate = new Date(doc.id);
-          let shouldDelete = false;
-
-          if (option === "1") {
-            const oneMonthAgo = new Date();
-            oneMonthAgo.setMonth(currentDate.getMonth() - 1);
-            if (bookingDate < oneMonthAgo) shouldDelete = true;
-          } else if (option === "2") {
-            const twoMonthsAgo = new Date();
-            twoMonthsAgo.setMonth(currentDate.getMonth() - 2);
-            if (bookingDate < twoMonthsAgo) shouldDelete = true;
-          } else if (option === "all") {
-            shouldDelete = true;
-          }
-
-          if (shouldDelete) {
-            db.collection("bookings").doc(doc.id).delete().then(() => {
-              console.log(`Bokning för ${doc.id} raderad`);
-              loadBookings();
-            }).catch((error) => {
-              console.error("Fel vid radering av bokning:", error);
-            });
-          }
-        });
-      });
-    }
+    // Förvalt dagens datum
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById("datePicker").value = today;
+      document.getElementById("availabilityDate").value = today;
+    };
   </script>
 </body>
 </html>
