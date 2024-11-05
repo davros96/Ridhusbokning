@@ -4,120 +4,143 @@
   <meta charset="UTF-8">
   <title>Ridhusbokning</title>
   <style>
-    /* Bakgrundsbild */
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background-image: url("ridhus.jpeg");
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-    }
-
-    /* Huvudcontainer för centrerat innehåll */
-    .overlay {
-      background-color: rgba(255, 255, 255, 0.85);
-      border-radius: 10px;
+      max-width: 700px;
+      margin: auto;
       padding: 20px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      text-align: center;
+      background-color: #f4f4f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-
     h1 {
-      font-size: 2em;
       color: #333;
+      text-align: center;
       margin-bottom: 20px;
     }
-
     .container {
       background-color: #ffffff;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 15px;
-      margin-bottom: 20px;
-      text-align: left;
+      padding: 20px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 700px;
     }
-
+    .image-container {
+      width: 100%;
+      max-width: 700px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .image-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
     label {
       font-weight: bold;
-      color: #555;
+      margin-top: 10px;
       display: block;
-      margin-bottom: 5px;
+      color: #555;
     }
-
-    input[type="date"], select {
+    input[type="date"] {
       width: calc(100% - 20px);
       padding: 10px;
-      font-size: 1em;
-      color: #333;
-      background-color: #fafafa;
+      margin-top: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
-      margin-top: 5px;
+      font-size: 16px;
+      color: #333;
+      background-color: #fafafa;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-
-    .time-slot {
-      padding: 10px;
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
       margin-top: 10px;
+      font-size: 16px;
+      color: #ffffff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-align: center;
+      width: 100%;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    .time-slot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
       border: 1px solid #ddd;
       border-radius: 4px;
       background-color: #fafafa;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
-      text-align: left;
     }
-
     .booked {
       background-color: #f8d7da;
+      cursor: not-allowed;
       color: #721c24;
     }
+    .available {
+      color: #155724;
+    }
 
-    /* Media Query för mobiler */
+    /* Media Query för mobiler (skärmar mindre än 600px) */
     @media (max-width: 600px) {
       h1 {
-        font-size: 1.8em;
+        font-size: 1.5em;
       }
-
-      .overlay {
-        width: 95%;
+      .container {
+        padding: 15px;
       }
-
-      input[type="date"], select {
-        font-size: 1.2em;
+      .button {
+        font-size: 14px;
+        padding: 10px;
       }
-
+      input[type="date"] {
+        font-size: 14px;
+      }
       .time-slot {
-        font-size: 1.1em;
+        flex-direction: column;
+        align-items: flex-start;
       }
     }
   </style>
 </head>
 <body>
-  <div class="overlay">
-    <h1>Ridhusbokning</h1>
+  <div class="image-container">
+    <img src="ridhus.jpeg" alt="Bild på ridhuset">
+  </div>
 
-    <div class="container">
-      <label for="datePicker">Välj en dag att boka:</label>
-      <input type="date" id="datePicker" onchange="loadTimeSlots()">
-    </div>
+  <h1>Ridhusbokning</h1>
 
-    <div class="container">
-      <h2>Tillgängliga tider</h2>
-      <div id="timeSlots"></div>
-    </div>
+  <div class="container">
+    <h2>Välj en dag att boka</h2>
+    <label for="datePicker">Datum:</label>
+    <input type="date" id="datePicker" onchange="loadTimeSlots()">
+  </div>
+
+  <div class="container">
+    <h2>Tillgängliga tider</h2>
+    <div id="timeSlots"></div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
+    // Firebase-konfiguration från Firebase Console
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -128,22 +151,24 @@
       measurementId: "G-1NPSSBC2CW"
     };
 
+    // Initialisera Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Sätt dagens datum som standard
     function setDefaultDate() {
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadTimeSlots();
+      loadTimeSlots(); // Ladda tider för dagens datum
     }
 
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
-      timeSlotsContainer.innerHTML = "";
+      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
 
       if (selectedDate) {
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
@@ -161,12 +186,14 @@
                 if (doc.exists) {
                   const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
                   const maxBookings = doc.data().maxBookings || 4;
+
                   if (bookingsCount >= maxBookings) {
                     slotDiv.classList.add("booked");
                     slotDiv.textContent += " - Fullbokad";
                     slotDiv.onclick = null;
                   } else {
                     slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
+                    slotDiv.classList.add("available");
                   }
                 } else {
                   slotDiv.textContent += " - 4 platser kvar";
@@ -186,22 +213,25 @@
       const name = prompt("Ange ditt namn för att boka tiden:");
       if (name) {
         const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+
         bookingRef.get().then((doc) => {
           if (doc.exists) {
             const currentBookings = doc.data().bookings || [];
-            if (currentBookings.length < 4) {
+            const maxBookings = doc.data().maxBookings || 4;
+
+            if (currentBookings.length < maxBookings) {
               currentBookings.push({ name: name, timestamp: new Date() });
               bookingRef.set({ bookings: currentBookings }).then(() => {
                 alert("Bokning lyckades!");
-                loadTimeSlots();
+                loadTimeSlots(); // Uppdatera tiden som bokad
               });
             } else {
               alert("Denna tid är fullbokad.");
             }
           } else {
-            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
+            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }], maxBookings: 4 }).then(() => {
               alert("Bokning lyckades!");
-              loadTimeSlots();
+              loadTimeSlots(); // Uppdatera tiden som bokad
             });
           }
         }).catch((error) => {
@@ -210,6 +240,7 @@
       }
     }
 
+    // Sätt dagens datum när sidan laddas
     window.onload = setDefaultDate;
   </script>
 </body>
