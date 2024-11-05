@@ -2,48 +2,54 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Ridhusbokning Lillälven</title>
+  <title>Ridhusbokning</title>
   <style>
     /* Grundläggande stil för alla enheter */
     body {
       font-family: Arial, sans-serif;
-      background-image: url("ridhus.jpeg");
-      background-size: cover;
-      background-position: center;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      background-color: rgba(255, 255, 255, 0.9);
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      max-width: 700px;
+      margin: auto;
       padding: 20px;
-      max-width: 400px;
-      width: 90%;
+      background-color: #f4f4f9;
+    }
+    h1, h2 {
+      color: #333;
       text-align: center;
     }
-    h1 {
-      color: #333;
-      margin-bottom: 20px;
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-top: 20px;
     }
-    h2 {
-      color: #333;
-      font-size: 18px;
-      margin-bottom: 10px;
+    .image-container {
+      position: relative;
+      background-image: url('ridhus.jpeg');
+      background-size: cover;
+      background-position: center;
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+    .overlay {
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 600px;
+      box-sizing: border-box;
     }
     label {
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-top: 10px;
       display: block;
       color: #555;
-      text-align: left;
     }
     input[type="date"] {
-      width: 100%;
+      width: calc(100% - 20px);
       padding: 10px;
       margin-top: 5px;
       border: 1px solid #ddd;
@@ -51,19 +57,36 @@
       font-size: 16px;
       color: #333;
       background-color: #fafafa;
-      box-sizing: border-box;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #ffffff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-align: center;
+      width: 100%;
+    }
+    .button:hover {
+      background-color: #0056b3;
     }
     .time-slot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding: 10px;
-      margin: 10px auto;
+      margin: 5px 0;
       border: 1px solid #ddd;
       border-radius: 4px;
       background-color: #fafafa;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
-      max-width: 350px;
-      text-align: center;
-      font-size: 16px;
+      cursor: pointer;
     }
     .booked {
       background-color: #f8d7da;
@@ -73,35 +96,55 @@
 
     /* Media Query för mobiler (skärmar mindre än 600px) */
     @media (max-width: 600px) {
+      h1, h2 {
+        font-size: 1.5em;
+      }
       .container {
         padding: 15px;
       }
-      h1 {
-        font-size: 1.5em;
+      .overlay {
+        padding: 15px;
+        font-size: 1.2em;
+      }
+      input[type="date"], .button, .time-slot {
+        font-size: 18px;
+        padding: 12px;
       }
       .time-slot {
-        font-size: 14px;
+        flex-direction: column;
+        align-items: flex-start;
       }
-      input[type="date"] {
-        font-size: 14px;
+    }
+
+    /* Media Query för större skärmar (datorer och surfplattor) */
+    @media (min-width: 601px) {
+      body {
+        max-width: 800px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Ridhusbokning Lillälven</h1>
-    <h2>Välj en dag att boka:</h2>
-    <label for="datePicker">Datum:</label>
-    <input type="date" id="datePicker" onchange="loadTimeSlots()">
-    <h2>Tillgängliga tider</h2>
-    <div id="timeSlots"></div>
+  <div class="image-container">
+    <div class="overlay">
+      <h1>Ridhusbokning</h1>
+      <div class="container">
+        <h2>Välj en dag att boka</h2>
+        <label for="datePicker">Datum:</label>
+        <input type="date" id="datePicker" onchange="loadTimeSlots()">
+      </div>
+      <div class="container">
+        <h2>Tillgängliga tider</h2>
+        <div id="timeSlots"></div>
+      </div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
+    // Firebase-konfiguration från Firebase Console
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -122,13 +165,13 @@
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadTimeSlots(); // Ladda tider för dagens datum
+      loadTimeSlots();
     }
 
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
-      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
+      timeSlotsContainer.innerHTML = "";
 
       if (selectedDate) {
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
@@ -142,7 +185,6 @@
               slotDiv.textContent = slot;
               slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
 
-              // Kontrollera hur många som har bokat för denna tid
               db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
                 if (doc.exists) {
                   const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
@@ -150,7 +192,7 @@
                   if (bookingsCount >= maxBookings) {
                     slotDiv.classList.add("booked");
                     slotDiv.textContent += " - Fullbokad";
-                    slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+                    slotDiv.onclick = null;
                   } else {
                     slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
                   }
@@ -179,17 +221,17 @@
             const maxBookings = doc.data().maxBookings || 4;
             if (currentBookings.length < maxBookings) {
               currentBookings.push({ name: name, timestamp: new Date() });
-              bookingRef.set({ bookings: currentBookings }).then(() => {
+              bookingRef.set({ bookings: currentBookings, maxBookings }).then(() => {
                 alert("Bokning lyckades!");
-                loadTimeSlots(); // Uppdatera tiden som bokad
+                loadTimeSlots();
               });
             } else {
               alert("Denna tid är fullbokad.");
             }
           } else {
-            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
+            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }], maxBookings: 4 }).then(() => {
               alert("Bokning lyckades!");
-              loadTimeSlots(); // Uppdatera tiden som bokad
+              loadTimeSlots();
             });
           }
         }).catch((error) => {
@@ -198,7 +240,6 @@
       }
     }
 
-    // Sätt dagens datum när sidan laddas
     window.onload = setDefaultDate;
   </script>
 </body>
