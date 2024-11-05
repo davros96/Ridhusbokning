@@ -79,9 +79,18 @@
       cursor: not-allowed;
       color: #721c24;
     }
+    .image-container img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
+  <div class="image-container">
+    <img src="ridhus.jpeg" alt="Bild på ridhuset">
+  </div>
+
   <h1>Ridhusbokning</h1>
 
   <div class="container">
@@ -114,43 +123,45 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const predefinedTimeSlots = ["08:00-08:30", "08:30-09:00", "09:00-09:30", "09:30-10:00", 
-                                 "10:00-10:30", "10:30-11:00", "11:00-11:30", "11:30-12:00", 
-                                 "12:00-12:30", "12:30-13:00", "13:00-13:30", "13:30-14:00", 
-                                 "14:00-14:30", "14:30-15:00", "15:00-15:30", "15:30-16:00", 
-                                 "16:00-16:30", "16:30-17:00", "17:00-17:30", "17:30-18:00", 
-                                 "18:00-18:30", "18:30-19:00", "19:00-19:30", "19:30-20:00", 
-                                 "20:00-20:30", "20:30-21:00", "21:00-21:30", "21:30-22:00"];
-
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
       timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
 
       if (selectedDate) {
-        predefinedTimeSlots.forEach((slot) => {
-          const slotDiv = document.createElement("div");
-          slotDiv.className = "time-slot";
-          slotDiv.textContent = slot;
-          slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
+        // Hämta tillgängliga tider för valt datum från Firestore
+        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
+          if (snapshot.empty) {
+            timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
+          } else {
+            snapshot.forEach((doc) => {
+              const slot = doc.id;
+              const slotDiv = document.createElement("div");
+              slotDiv.className = "time-slot";
+              slotDiv.textContent = slot;
+              slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
 
-          // Kontrollera hur många som har bokat för denna tid
-          db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
-            if (doc.exists) {
-              const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
-              if (bookingsCount >= 4) {
-                slotDiv.classList.add("booked");
-                slotDiv.textContent += " - Fullbokad";
-                slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
-              } else {
-                slotDiv.textContent += ` - ${4 - bookingsCount} platser kvar`;
-              }
-            } else {
-              slotDiv.textContent += " - 4 platser kvar";
-            }
-          });
+              // Kontrollera hur många som har bokat för denna tid
+              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
+                if (doc.exists) {
+                  const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
+                  if (bookingsCount >= 4) {
+                    slotDiv.classList.add("booked");
+                    slotDiv.textContent += " - Fullbokad";
+                    slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+                  } else {
+                    slotDiv.textContent += ` - ${4 - bookingsCount} platser kvar`;
+                  }
+                } else {
+                  slotDiv.textContent += " - 4 platser kvar";
+                }
+              });
 
-          timeSlotsContainer.appendChild(slotDiv);
+              timeSlotsContainer.appendChild(slotDiv);
+            });
+          }
+        }).catch((error) => {
+          console.error("Fel vid hämtning av tillgängliga tider:", error);
         });
       }
     }
