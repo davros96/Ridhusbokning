@@ -116,19 +116,8 @@
     </div>
 
     <div class="container">
-      <h2>Rensa gamla bokningar</h2>
-      <label for="cleanDate">Välj tidsram för rensning:</label>
-      <select id="cleanDate">
-        <option value="1">1 månad bakåt</option>
-        <option value="2">2 månader bakåt</option>
-        <option value="all">Alla bokningar</option>
-      </select>
-      <button class="button" onclick="cleanOldBookings()">Rensa bokningar</button>
-    </div>
-
-    <div class="container">
       <h2>Tillgängliga tider för vald dag</h2>
-      <input type="date" id="datePicker" onchange="loadAvailableTimes()">
+      <input type="date" id="datePicker" onchange="loadAvailableTimes(); loadBookings();">
       <div id="availableTimeSlots"></div>
     </div>
 
@@ -231,9 +220,6 @@
               deleteButton.onclick = () => deleteAvailableTime(selectedDate, timeSlot);
               timeDiv.appendChild(deleteButton);
 
-              // Load bookings for each time slot
-              loadBookings(selectedDate, timeSlot, timeDiv);
-
               availableTimeSlots.appendChild(timeDiv);
             });
           }
@@ -243,42 +229,70 @@
       }
     }
 
-    function loadBookings(date, timeSlot, timeDiv) {
-      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-      bookingRef.get().then(doc => {
-        if (doc.exists) {
-          const bookings = doc.data().bookings || [];
-          bookings.forEach(booking => {
-            const bookingInfoDiv = document.createElement("div");
-            bookingInfoDiv.className = "booking-info";
-            bookingInfoDiv.textContent = booking.name;
-
-            const removeButton = document.createElement("button");
-            removeButton.textContent = "Ta bort bokning";
-            removeButton.className = "delete-button";
-            removeButton.onclick = () => removeBooking(date, timeSlot, booking.name);
-            bookingInfoDiv.appendChild(removeButton);
-
-            timeDiv.appendChild(bookingInfoDiv);
-          });
-        }
-      }).catch(error => {
-        console.error("Fel vid hämtning av bokningar:", error);
+    function deleteAvailableTime(date, timeSlot) {
+      db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete().then(() => {
+        loadAvailableTimes();
+      }).catch((error) => {
+        console.error("Fel vid radering av tid:", error);
       });
     }
 
-    function removeBooking(date, timeSlot, name) {
+    function loadBookings() {
+      const selectedDate = document.getElementById("datePicker").value;
+      const bookingsContainer = document.getElementById("bookingsContainer");
+      bookingsContainer.innerHTML = "";
+
+      if (selectedDate) {
+        db.collection("bookings").doc(selectedDate).collection("times").get().then((snapshot) => {
+          if (snapshot.empty) {
+            bookingsContainer.innerHTML = "<p>Inga bokningar hittades för denna dag.</p>";
+          } else {
+            snapshot.forEach((doc) => {
+              const timeSlot = doc.id;
+              const bookings = doc.data().bookings || [];
+
+              const timeDiv = document.createElement("div");
+              timeDiv.className = "time-slot";
+              timeDiv.textContent = `Tid: ${timeSlot}`;
+
+              bookings.forEach((booking, index) => {
+                const bookingInfo = document.createElement("div");
+                bookingInfo.className = "booking-info";
+                bookingInfo.textContent = `${booking.name}`;
+
+                const deleteBookingButton = document.createElement("button");
+                deleteBookingButton.textContent = "Ta bort bokning";
+                deleteBookingButton.className = "delete-button";
+                deleteBookingButton.onclick = () => deleteBooking(selectedDate, timeSlot, index);
+                bookingInfo.appendChild(deleteBookingButton);
+
+                timeDiv.appendChild(bookingInfo);
+              });
+
+              bookingsContainer.appendChild(timeDiv);
+            });
+          }
+        }).catch((error) => {
+          console.error("Fel vid hämtning av bokningar:", error);
+        });
+      }
+    }
+
+    function deleteBooking(date, timeSlot, bookingIndex) {
       const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-      bookingRef.get().then(doc => {
+
+      bookingRef.get().then((doc) => {
         if (doc.exists) {
-          const currentBookings = doc.data().bookings || [];
-          const updatedBookings = currentBookings.filter(b => b.name !== name);
-          bookingRef.set({ bookings: updatedBookings }).then(() => {
-            loadAvailableTimes();
-          });
+          const bookings = doc.data().bookings || [];
+          if (bookingIndex >= 0 && bookingIndex < bookings.length) {
+            bookings.splice(bookingIndex, 1);
+            bookingRef.set({ bookings }).then(() => {
+              loadBookings();
+            });
+          }
         }
-      }).catch(error => {
-        console.error("Fel vid borttagning av bokning:", error);
+      }).catch((error) => {
+        console.error("Fel vid radering av bokning:", error);
       });
     }
 
@@ -290,6 +304,7 @@
       document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
       loadAvailableTimes();
+      loadBookings();
     }
 
     window.onload = () => {
