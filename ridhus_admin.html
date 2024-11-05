@@ -114,6 +114,17 @@
     </div>
   </div>
 
+  <div class="container">
+    <h2>Rensa gamla bokningar</h2>
+    <label for="deleteRange">Välj tidsram för rensning:</label>
+    <select id="deleteRange">
+      <option value="1">1 månad bakåt</option>
+      <option value="2">2 månader bakåt</option>
+      <option value="all">Alla bokningar äldre än dagens datum</option>
+    </select>
+    <button class="button" onclick="clearOldBookings()">Rensa bokningar</button>
+  </div>
+
   <div id="availableTimesContainer" class="container" style="display: none;">
     <h2>Tillgängliga tider för vald dag</h2>
     <input type="date" id="datePicker" onchange="loadAvailableTimes()">
@@ -183,6 +194,44 @@
       });
     }
 
+    function clearOldBookings() {
+      const range = document.getElementById("deleteRange").value;
+      const today = new Date();
+      let cutoffDate;
+
+      if (range === "1") {
+        cutoffDate = new Date(today.setMonth(today.getMonth() - 1));
+      } else if (range === "2") {
+        cutoffDate = new Date(today.setMonth(today.getMonth() - 2));
+      } else {
+        cutoffDate = new Date(0); // Om "alla bokningar äldre än dagens datum" är valt, sätt cutoff till långt tillbaka
+      }
+
+      const cutoffDateString = cutoffDate.toISOString().split("T")[0];
+
+      db.collection("bookings").get().then((snapshot) => {
+        const deletePromises = [];
+
+        snapshot.forEach((doc) => {
+          const bookingDate = doc.id; // Anta att doc.id är i formatet "yyyy-mm-dd"
+          if (bookingDate < cutoffDateString) {
+            deletePromises.push(doc.ref.delete().then(() => {
+              console.log("Rensade bokningar för datumet:", bookingDate);
+            }).catch((error) => {
+              console.error("Fel vid rensning av bokning:", error);
+            }));
+          }
+        });
+
+        return Promise.all(deletePromises);
+      }).then(() => {
+        alert("Gamla bokningar har rensats.");
+        loadAvailableTimes(); // Uppdatera tillgängliga tider om det behövs
+      }).catch((error) => {
+        console.error("Fel vid hämtning av bokningar:", error);
+      });
+    }
+
     function loadAvailableTimes() {
       const selectedDate = document.getElementById("datePicker").value;
       const availableTimeSlots = document.getElementById("availableTimeSlots");
@@ -200,27 +249,6 @@
               timeDiv.className = "time-slot";
               timeDiv.textContent = timeSlot;
 
-              db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((bookingDoc) => {
-                if (bookingDoc.exists) {
-                  const bookings = bookingDoc.data().bookings || [];
-                  bookings.forEach((booking, index) => {
-                    const bookingInfo = document.createElement("div");
-                    bookingInfo.className = "booked-info";
-                    bookingInfo.textContent = `Bokad av: ${booking.name}`;
-
-                    const removeBookingButton = document.createElement("button");
-                    removeBookingButton.className = "remove-booking-button";
-                    removeBookingButton.textContent = "Ta bort bokning";
-                    removeBookingButton.onclick = () => removeBooking(selectedDate, timeSlot, index);
-
-                    bookingInfo.appendChild(removeBookingButton);
-                    timeDiv.appendChild(bookingInfo);
-                  });
-                }
-              }).catch((error) => {
-                console.error("Fel vid hämtning av bokningsinformation:", error);
-              });
-
               const deleteButton = document.createElement("button");
               deleteButton.textContent = "Ta bort hela tiden";
               deleteButton.className = "delete-button";
@@ -235,24 +263,6 @@
           console.error("Fel vid hämtning av tillgängliga tider:", error);
         });
       }
-    }
-
-    function removeBooking(date, timeSlot, bookingIndex) {
-      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-
-      bookingRef.get().then((doc) => {
-        if (doc.exists) {
-          const bookings = doc.data().bookings || [];
-          bookings.splice(bookingIndex, 1); // Ta bort bokningen från listan
-
-          bookingRef.update({ bookings: bookings }).then(() => {
-            alert("Bokningen har tagits bort.");
-            loadAvailableTimes(); // Uppdatera vyn
-          }).catch((error) => {
-            console.error("Fel vid uppdatering av bokningar:", error);
-          });
-        }
-      });
     }
 
     function deleteAvailableTime(date, timeSlot) {
