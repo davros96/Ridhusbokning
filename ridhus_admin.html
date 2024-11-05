@@ -59,7 +59,6 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      margin-left: 10px;
     }
     .delete-button:hover {
       background-color: #c82333;
@@ -73,10 +72,10 @@
     <h2>Lägg till en specifik tillgänglig tid</h2>
     <label for="availableDate">Datum:</label>
     <input type="date" id="availableDate">
-    
+
     <label for="startTime">Starttid:</label>
     <select id="startTime"></select>
-    
+
     <label for="endTime">Sluttid:</label>
     <select id="endTime"></select>
 
@@ -87,8 +86,19 @@
       <option value="3">3</option>
       <option value="4" selected>4</option>
     </select>
-    
+
     <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
+  </div>
+
+  <div class="container">
+    <h2>Rensa gamla bokningar</h2>
+    <label for="cleanDate">Välj tidsram för rensning:</label>
+    <select id="cleanDate">
+      <option value="1">1 månad bakåt</option>
+      <option value="2">2 månader bakåt</option>
+      <option value="all">Alla bokningar</option>
+    </select>
+    <button class="button" onclick="cleanOldBookings()">Rensa bokningar</button>
   </div>
 
   <div class="container">
@@ -188,6 +198,33 @@
         loadAvailableTimes(); // Uppdatera listan
       }).catch((error) => {
         console.error("Fel vid borttagning av tid:", error);
+      });
+    }
+
+    function cleanOldBookings() {
+      const timeframe = document.getElementById("cleanDate").value;
+      let cutoffDate;
+
+      const today = new Date();
+      if (timeframe === "1") {
+        cutoffDate = new Date(today.setMonth(today.getMonth() - 1)); // 1 månad bakåt
+      } else if (timeframe === "2") {
+        cutoffDate = new Date(today.setMonth(today.getMonth() - 2)); // 2 månader bakåt
+      } else {
+        cutoffDate = new Date(0); // Alla bokningar
+      }
+
+      db.collection("bookings").get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const bookingDate = new Date(doc.id);
+          if (bookingDate <= cutoffDate) {
+            doc.ref.delete().then(() => {
+              console.log(`Bokning borttagen för datum: ${doc.id}`);
+            });
+          }
+        });
+      }).catch(error => {
+        console.error("Fel vid rensning av bokningar:", error);
       });
     }
 
