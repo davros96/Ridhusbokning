@@ -324,11 +324,14 @@
               timeDiv.className = "time-slot";
               timeDiv.textContent = `${timeSlot}: ${bookings.map(b => b.name).join(', ')}`;
 
-              const removeButton = document.createElement("button");
-              removeButton.textContent = "Ta bort bokning";
-              removeButton.className = "delete-button";
-              removeButton.onclick = () => removeBooking(selectedDate, timeSlot);
-              timeDiv.appendChild(removeButton);
+              // Ta bort bokning för en specifik person
+              bookings.forEach(booking => {
+                const removeButton = document.createElement("button");
+                removeButton.textContent = "Ta bort " + booking.name;
+                removeButton.className = "delete-button";
+                removeButton.onclick = () => removeBooking(selectedDate, timeSlot, booking.name);
+                timeDiv.appendChild(removeButton);
+              });
 
               bookingList.appendChild(timeDiv);
             });
@@ -339,16 +342,15 @@
       }
     }
 
-    function removeBooking(date, timeSlot) {
+    function removeBooking(date, timeSlot, name) {
       const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
       bookingRef.get().then((doc) => {
         if (doc.exists) {
           const bookings = doc.data().bookings || [];
-          const nameToRemove = prompt("Ange namnet på bokningen som ska tas bort:");
+          const updatedBookings = bookings.filter(booking => booking.name !== name);
 
-          const updatedBookings = bookings.filter(booking => booking.name !== nameToRemove);
           bookingRef.set({ bookings: updatedBookings }).then(() => {
-            alert("Bokningen har tagits bort.");
+            alert(name + " har tagits bort från bokningen.");
             loadBookings(); // Uppdatera listan med bokningar
           });
         } else {
