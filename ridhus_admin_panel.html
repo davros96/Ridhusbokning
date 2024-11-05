@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Ridhus Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    h1, h2 { color: #333; }
+    .available-times, .booking-list { margin: 20px 0; }
+    label, input, button, select { display: block; margin: 10px 0; }
+    .time-slot { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; padding: 5px; border: 1px solid #ddd; }
+    .delete-button { background-color: #f44336; color: white; border: none; padding: 5px; cursor: pointer; }
+    .booked-info { color: #721c24; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>Adminpanel för Ridhusbokning</h1>
+
+  <h2>Lägg till alla tillgängliga tider för en dag</h2>
+  <div class="available-times">
+    <label for="availableDate">Datum:</label>
+    <input type="date" id="availableDate">
+    <button onclick="addAllAvailableTimes()">Lägg till alla tider (08:00 - 22:00)</button>
+  </div>
+
+  <h2>Tillgängliga tider för vald dag</h2>
+  <input type="date" id="datePicker" onchange="loadAvailableTimes()">
+  <div id="availableTimeSlots" class="available-times"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "API_KEY",
+      authDomain: "bokning---ridhus.firebaseapp.com",
+      projectId: "bokning---ridhus",
+      storageBucket: "bokning---ridhus.firebasestorage.app",
+      messagingSenderId: "950961153911",
+      appId: "1:950961153911:web:8048686c4b5bf6ff18a372",
+      measurementId: "G-1NPSSBC2CW"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Generera alla halvtimmar mellan 08:00 och 22:00
+    function generateTimeSlots() {
+      const slots = [];
+      let hour = 8;
+      let minute = 0;
+      while (hour < 22 || (hour === 22 && minute === 0)) {
+        let start = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        minute += 30;
+        if (minute === 60) {
+          minute = 0;
+          hour += 1;
+        }
+        let end = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        slots.push(`${start}-${end}`);
+      }
+      return slots;
+    }
+
+    // Lägg till alla tillgängliga tider för en specifik dag
+    function addAllAvailableTimes() {
+      const date = document.getElementById("availableDate").value;
+      const timeSlots = generateTimeSlots();
+
+      if (date) {
+        timeSlots.forEach((timeSlot) => {
+          const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
+          availableTimeRef.set({ isAvailable: true }).then(() => {
+            console.log("Tillgänglig tid tillagd:", date, timeSlot);
+          }).catch((error) => {
+            console.error("Fel vid tilläggning av tillgänglig tid:", error);
+          });
+        });
+        alert("Alla tider mellan 08:00 och 22:00 har lagts till.");
+        loadAvailableTimes(); // Uppdatera listan
+      } else {
+        alert("Välj ett datum innan du lägger till tider.");
+      }
+    }
+
+    // Ladda och visa tillgängliga tider samt bokningsinformation för ett specifikt datum
+    function loadAvailableTimes() {
+      const selectedDate = document.getElementById("datePicker").value;
+      const availableTimeSlots = document.getElementById("availableTimeSlots");
+      availableTimeSlots.innerHTML = ""; // Rensa tidigare visade tider
+
+      if (selectedDate) {
+        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
+          if (snapshot.empty) {
+            console.log("Inga tillgängliga tider för valt datum:", selectedDate);
+            availableTimeSlots.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
+          } else {
+            snapshot.forEach((doc) => {
+              const timeSlot = doc.id;
+              const timeDiv = document.createElement("div");
+              timeDiv.className = "time-slot";
+              timeDiv.textContent = timeSlot;
+
+              // Hämta bokningsinformation från `bookings`
+              db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((bookingDoc) => {
+                if (bookingDoc.exists) {
+                  const bookings = bookingDoc.data().bookings || [];
+                  if (bookings.length > 0) {
+                    const bookedInfo = document.createElement("div");
+                    bookedInfo.className = "booked-info";
+                    bookedInfo.textContent = `Bokad av: ${bookings.map(b => b.name).join(', ')}`;
+                    timeDiv.appendChild(bookedInfo);
+                  }
+                }
+              }).catch((error) => {
+                console.error("Fel vid hämtning av bokningsinformation:", error);
+              });
+
+              // Lägg till en knapp för att ta bort tillgängliga tider
+              const deleteButton = document.createElement("button");
+              deleteButton.textContent = "Ta bort";
+              deleteButton.className = "delete-button";
+              deleteButton.onclick = () => deleteAvailableTime(selectedDate, timeSlot);
+              timeDiv.appendChild(deleteButton);
+
+              availableTimeSlots.appendChild(timeDiv);
+              console.log("Tillgänglig tid hämtad:", timeSlot);
+            });
+          }
+        }).catch((error) => {
+          console.error("Fel vid hämtning av tillgängliga tider:", error);
+        });
+      }
+    }
+
+    // Ta bort en specifik tillgänglig tid
+    function deleteAvailableTime(date, timeSlot) {
+      db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete().then(() => {
+        console.log("Tiden har tagits bort:", date, timeSlot);
+        loadAvailableTimes(); // Uppdatera listan
+      }).catch((error) => {
+        console.error("Fel vid borttagning av tid:", error);
+      });
+    }
+
+    loadAvailableTimes(); // Ladda listan vid start
+  </script>
+</body>
+</html>
