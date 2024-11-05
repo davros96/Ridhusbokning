@@ -2,9 +2,8 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Ridhusbokning Lillälven</title>
+  <title>Ridhusbokning</title>
   <style>
-    /* Grundläggande stil för alla enheter */
     body {
       font-family: Arial, sans-serif;
       max-width: 700px;
@@ -22,9 +21,6 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
       margin-top: 20px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
     }
     .image-container img {
       width: 100%;
@@ -38,7 +34,7 @@
       color: #555;
     }
     input[type="date"] {
-      width: calc(100% - 20px); /* Justera bredd för att ge utrymme på sidorna */
+      width: calc(100% - 20px);
       padding: 10px;
       margin-top: 5px;
       border: 1px solid #ddd;
@@ -72,7 +68,7 @@
     <img src="ridhus.jpeg" alt="Bild på ridhuset">
   </div>
 
-  <h1>Ridhusbokning Lillälven</h1>
+  <h1>Ridhusbokning</h1>
 
   <div class="container">
     <h2>Välj en dag att boka</h2>
@@ -89,7 +85,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
-    // Firebase-konfiguration från Firebase Console
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -100,11 +95,9 @@
       measurementId: "G-1NPSSBC2CW"
     };
 
-    // Initialisera Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Sätt dagens datum som standard
     function setDefaultDate() {
       const today = new Date();
       const yyyy = today.getFullYear();
@@ -120,7 +113,6 @@
       timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
 
       if (selectedDate) {
-        // Hämta tillgängliga tider för valt datum från Firestore
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
           if (snapshot.empty) {
             timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
@@ -132,10 +124,10 @@
               slotDiv.textContent = slot;
               slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
 
-              // Kontrollera hur många som har bokat för denna tid
-              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
-                if (doc.exists) {
-                  const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
+              // Kontrollera max antal bokningar
+              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((bookingDoc) => {
+                if (bookingDoc.exists) {
+                  const bookingsCount = bookingDoc.data().bookings ? bookingDoc.data().bookings.length : 0;
                   const maxBookings = doc.data().maxBookings || 4; // Hämta max bokningar
                   if (bookingsCount >= maxBookings) {
                     slotDiv.classList.add("booked");
