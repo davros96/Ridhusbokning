@@ -211,7 +211,7 @@
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
       const endTime = document.getElementById("endTime").value;
-      const maxBookings = document.getElementById("maxBookings").value;
+      const maxBookings = parseInt(document.getElementById("maxBookings").value);
 
       if (!date || !startTime || !endTime) {
         alert("Välj datum, starttid och sluttid.");
@@ -228,7 +228,7 @@
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
-      availableTimeRef.set({ isAvailable: true, maxBookings: parseInt(maxBookings) }).then(() => {
+      availableTimeRef.set({ isAvailable: true, maxBookings: maxBookings, bookings: [] }).then(() => {
         loadAvailableTimes();
       }).catch((error) => {
         console.error("Fel vid tilläggning av tillgänglig tid:", error);
@@ -280,14 +280,14 @@
       bookingsContainer.innerHTML = "";
 
       if (selectedDate) {
-        db.collection("bookings").doc(selectedDate).collection("times").get().then((snapshot) => {
+        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
           if (snapshot.empty) {
             bookingsContainer.innerHTML = "<p>Inga bokningar hittades för denna dag.</p>";
           } else {
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
               const bookings = doc.data().bookings || [];
-              const maxBookings = bookings.length ? doc.data().maxBookings : "Max ej angivet";
+              const maxBookings = doc.data().maxBookings;
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
@@ -317,14 +317,14 @@
     }
 
     function deleteBooking(date, timeSlot, bookingIndex) {
-      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+      const bookingRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
       bookingRef.get().then((doc) => {
         if (doc.exists) {
           const bookings = doc.data().bookings || [];
           if (bookingIndex >= 0 && bookingIndex < bookings.length) {
             bookings.splice(bookingIndex, 1);
-            bookingRef.set({ bookings }).then(() => {
+            bookingRef.set({ ...doc.data(), bookings }).then(() => {
               loadBookings();
             });
           }
