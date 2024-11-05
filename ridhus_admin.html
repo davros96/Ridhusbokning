@@ -16,11 +16,18 @@
 <body>
   <h1>Adminpanel för Ridhusbokning</h1>
 
-  <h2>Lägg till alla tillgängliga tider för en dag</h2>
+  <h2>Lägg till en specifik tillgänglig tid</h2>
   <div class="available-times">
     <label for="availableDate">Datum:</label>
     <input type="date" id="availableDate">
-    <button onclick="addAllAvailableTimes()">Lägg till alla tider (08:00 - 22:00)</button>
+    
+    <label for="startTime">Starttid:</label>
+    <select id="startTime"></select>
+    
+    <label for="endTime">Sluttid:</label>
+    <select id="endTime"></select>
+    
+    <button onclick="addAvailableTime()">Lägg till specifik tid</button>
   </div>
 
   <h2>Tillgängliga tider för vald dag</h2>
@@ -44,43 +51,53 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Generera alla halvtimmar mellan 08:00 och 22:00
-    function generateTimeSlots() {
-      const slots = [];
-      let hour = 8;
-      let minute = 0;
-      while (hour < 22 || (hour === 22 && minute === 0)) {
-        let start = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        minute += 30;
-        if (minute === 60) {
-          minute = 0;
-          hour += 1;
+    // Generera tider för dropdown
+    function populateTimeDropdowns() {
+      const startTimeDropdown = document.getElementById("startTime");
+      const endTimeDropdown = document.getElementById("endTime");
+
+      for (let hour = 8; hour <= 22; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+          const option = new Option(time, time);
+          startTimeDropdown.add(option.cloneNode(true));
+          endTimeDropdown.add(option);
         }
-        let end = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        slots.push(`${start}-${end}`);
       }
-      return slots;
     }
 
-    // Lägg till alla tillgängliga tider för en specifik dag
-    function addAllAvailableTimes() {
+    // Lägg till en tillgänglig tid med vald start- och sluttid
+    function addAvailableTime() {
       const date = document.getElementById("availableDate").value;
-      const timeSlots = generateTimeSlots();
+      const startTime = document.getElementById("startTime").value;
+      const endTime = document.getElementById("endTime").value;
 
-      if (date) {
-        timeSlots.forEach((timeSlot) => {
-          const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
-          availableTimeRef.set({ isAvailable: true }).then(() => {
-            console.log("Tillgänglig tid tillagd:", date, timeSlot);
-          }).catch((error) => {
-            console.error("Fel vid tilläggning av tillgänglig tid:", error);
-          });
-        });
-        alert("Alla tider mellan 08:00 och 22:00 har lagts till.");
-        loadAvailableTimes(); // Uppdatera listan
-      } else {
-        alert("Välj ett datum innan du lägger till tider.");
+      if (!date || !startTime || !endTime) {
+        alert("Välj datum, starttid och sluttid.");
+        return;
       }
+
+      // Kontrollera att tidsluckan är minst 30 minuter
+      const [startHour, startMinute] = startTime.split(":").map(Number);
+      const [endHour, endMinute] = endTime.split(":").map(Number);
+      const startDate = new Date(0, 0, 0, startHour, startMinute);
+      const endDate = new Date(0, 0, 0, endHour, endMinute);
+      const timeDifference = (endDate - startDate) / (1000 * 60); // Skillnad i minuter
+
+      if (timeDifference < 30) {
+        alert("Tidsluckan måste vara minst 30 minuter.");
+        return;
+      }
+
+      const timeSlot = `${startTime}-${endTime}`;
+      const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
+
+      availableTimeRef.set({ isAvailable: true }).then(() => {
+        console.log("Tillgänglig tid tillagd:", date, timeSlot);
+        loadAvailableTimes(); // Uppdatera listan
+      }).catch((error) => {
+        console.error("Fel vid tilläggning av tillgänglig tid:", error);
+      });
     }
 
     // Ladda och visa tillgängliga tider samt bokningsinformation för ett specifikt datum
@@ -143,7 +160,9 @@
       });
     }
 
-    loadAvailableTimes(); // Ladda listan vid start
+    // Initiera dropdown-menyerna och ladda befintliga tider
+    populateTimeDropdowns();
+    loadAvailableTimes();
   </script>
 </body>
 </html>
