@@ -4,45 +4,42 @@
   <meta charset="UTF-8">
   <title>Ridhusbokning</title>
   <style>
+    /* Ställer in bakgrundsbilden */
     body {
       font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: auto;
+      margin: 0;
+      padding: 0;
+      background: url('ridhus.jpeg') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    /* Innehållsbehållare med genomskinlig bakgrund */
+    .container {
+      background-color: rgba(255, 255, 255, 0.85); /* Halvgenomskinlig vit bakgrund */
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
-      background-color: #f4f4f9;
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
     }
     h1, h2 {
       color: #333;
       text-align: center;
     }
-    .container {
-      background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-top: 20px;
-    }
-    .image-container img {
-      width: 100%;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .button {
-      display: inline-block;
-      padding: 12px 24px;
-      margin-top: 10px;
+    input[type="date"] {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       font-size: 16px;
-      color: #ffffff;
-      background-color: #007bff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      text-align: center;
-      width: 100%;
-    }
-    .button:hover {
-      background-color: #0056b3;
+      color: #333;
+      background-color: #fafafa;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .time-slot {
       display: flex;
@@ -55,9 +52,6 @@
       background-color: #fafafa;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
-      max-width: 550px;
-      margin-left: auto;
-      margin-right: auto;
       cursor: pointer;
     }
     .booked {
@@ -68,20 +62,18 @@
   </style>
 </head>
 <body>
-  <div class="image-container">
-    <img src="ridhus.jpeg" alt="Bild på ridhuset">
-  </div>
-
-  <h1>Ridhusbokning</h1>
-
   <div class="container">
-    <h2>Välj en dag att boka</h2>
-    <input type="date" id="datePicker" onchange="loadTimeSlots()">
-  </div>
+    <h1>Ridhusbokning</h1>
 
-  <div class="container">
-    <h2>Tillgängliga tider</h2>
-    <div id="timeSlots"></div>
+    <div class="container">
+      <h2>Välj en dag att boka</h2>
+      <input type="date" id="datePicker" onchange="loadTimeSlots()">
+    </div>
+
+    <div class="container">
+      <h2>Tillgängliga tider</h2>
+      <div id="timeSlots"></div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
