@@ -118,6 +118,7 @@
     <div class="container">
       <h2>Tillgängliga tider för vald dag</h2>
       <input type="date" id="datePicker" onchange="loadAvailableTimes(); loadBookings();">
+      <button class="button" onclick="reloadContent()">Uppdatera</button>
       <div id="availableTimeSlots"></div>
     </div>
 
@@ -156,6 +157,11 @@
       }
     }
 
+    function reloadContent() {
+      loadAvailableTimes();
+      loadBookings();
+    }
+
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
       const endTimeDropdown = document.getElementById("endTime");
@@ -174,7 +180,7 @@
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
       const endTime = document.getElementById("endTime").value;
-      const maxBookings = document.getElementById("maxBookings").value;
+      const maxBookings = parseInt(document.getElementById("maxBookings").value, 10);
 
       if (!date || !startTime || !endTime) {
         alert("Välj datum, starttid och sluttid.");
@@ -250,7 +256,7 @@
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
               const bookings = doc.data().bookings || [];
-              const maxBookings = bookings.length ? doc.data().maxBookings : "Max ej angivet";
+              const maxBookings = doc.data().maxBookings || 4;
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
