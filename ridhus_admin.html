@@ -185,7 +185,7 @@
       if (enteredCode === "0570") {
         document.getElementById("accessCodeContainer").style.display = "none";
         document.getElementById("adminContent").style.display = "block";
-        document.getElementById("instructionBox").style.display = "block"; // Visa instruktionerna
+        document.getElementById("instructionBox").style.display = "block";
         populateTimeDropdowns();
         setDefaultDate();
       } else {
@@ -207,7 +207,7 @@
       }
     }
 
-    function addAvailableTime() {
+    async function addAvailableTime() {
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
       const endTime = document.getElementById("endTime").value;
@@ -228,20 +228,28 @@
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
-      availableTimeRef.set({ isAvailable: true, maxBookings: maxBookings, bookings: [] }).then(() => {
-        loadAvailableTimes();
-      }).catch((error) => {
+      try {
+        const doc = await availableTimeRef.get();
+        if (doc.exists) {
+          alert("Denna tid finns redan för det valda datumet.");
+        } else {
+          await availableTimeRef.set({ isAvailable: true, maxBookings: maxBookings, bookings: [] });
+          alert("Tid tillagd!");
+          loadAvailableTimes();
+        }
+      } catch (error) {
         console.error("Fel vid tilläggning av tillgänglig tid:", error);
-      });
+      }
     }
 
-    function loadAvailableTimes() {
+    async function loadAvailableTimes() {
       const selectedDate = document.getElementById("datePicker").value;
       const availableTimeSlots = document.getElementById("availableTimeSlots");
       availableTimeSlots.innerHTML = "";
 
       if (selectedDate) {
-        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
+        try {
+          const snapshot = await db.collection("availableTimes").doc(selectedDate).collection("times").get();
           if (snapshot.empty) {
             availableTimeSlots.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
           } else {
@@ -260,27 +268,30 @@
               availableTimeSlots.appendChild(timeDiv);
             });
           }
-        }).catch((error) => {
+        } catch (error) {
           console.error("Fel vid hämtning av tillgängliga tider:", error);
-        });
+        }
       }
     }
 
-    function deleteAvailableTime(date, timeSlot) {
-      db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete().then(() => {
+    async function deleteAvailableTime(date, timeSlot) {
+      try {
+        await db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete();
+        alert("Tid raderad!");
         loadAvailableTimes();
-      }).catch((error) => {
+      } catch (error) {
         console.error("Fel vid radering av tid:", error);
-      });
+      }
     }
 
-    function loadBookings() {
+    async function loadBookings() {
       const selectedDate = document.getElementById("datePicker").value;
       const bookingsContainer = document.getElementById("bookingsContainer");
       bookingsContainer.innerHTML = "";
 
       if (selectedDate) {
-        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
+        try {
+          const snapshot = await db.collection("availableTimes").doc(selectedDate).collection("times").get();
           if (snapshot.empty) {
             bookingsContainer.innerHTML = "<p>Inga bokningar hittades för denna dag.</p>";
           } else {
@@ -310,28 +321,29 @@
               bookingsContainer.appendChild(timeDiv);
             });
           }
-        }).catch((error) => {
+        } catch (error) {
           console.error("Fel vid hämtning av bokningar:", error);
-        });
+        }
       }
     }
 
-    function deleteBooking(date, timeSlot, bookingIndex) {
+    async function deleteBooking(date, timeSlot, bookingIndex) {
       const bookingRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
-      bookingRef.get().then((doc) => {
+      try {
+        const doc = await bookingRef.get();
         if (doc.exists) {
           const bookings = doc.data().bookings || [];
           if (bookingIndex >= 0 && bookingIndex < bookings.length) {
             bookings.splice(bookingIndex, 1);
-            bookingRef.set({ ...doc.data(), bookings }).then(() => {
-              loadBookings();
-            });
+            await bookingRef.set({ ...doc.data(), bookings });
+            alert("Bokning raderad!");
+            loadBookings();
           }
         }
-      }).catch((error) => {
+      } catch (error) {
         console.error("Fel vid borttagning av bokning:", error);
-      });
+      }
     }
 
     function setDefaultDate() {
