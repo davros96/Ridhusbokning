@@ -2,55 +2,66 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Adminpanel för Ridhusbokning Lillälven</title>
+  <title>Adminpanel för Ridhusbokning</title>
   <style>
+    /* Grundläggande stil */
     body {
       font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: auto;
-      padding: 20px;
       background-color: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 700px;
+      width: 100%;
+      box-sizing: border-box;
     }
     h1, h2 {
       color: #333;
       text-align: center;
     }
-    .container {
-      background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-top: 20px;
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+      color: #555;
+    }
+    input[type="date"], select, input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      box-sizing: border-box;
     }
     .button {
-      padding: 10px 20px;
-      margin-top: 10px;
-      font-size: 15px;
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 16px;
       color: #ffffff;
       background-color: #007bff;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
       text-align: center;
     }
     .button:hover {
       background-color: #0056b3;
     }
-    input[type="date"], select {
-      width: calc(100% - 20px);
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 16px;
-      color: #333;
-      background-color: #fafafa;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
     .time-slot {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
       padding: 10px;
       margin: 5px 0;
       border: 1px solid #ddd;
@@ -59,24 +70,13 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
     }
-    .booking-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 5px;
-      padding: 8px;
-      background-color: #f0f0f0;
-      border-radius: 4px;
-    }
     .delete-button {
-      padding: 6px 12px;
-      font-size: 14px;
-      color: #ffffff;
       background-color: #dc3545;
+      color: white;
+      padding: 5px 10px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
     .delete-button:hover {
       background-color: #c82333;
@@ -84,49 +84,29 @@
   </style>
 </head>
 <body>
-  <h1>Adminpanel för Ridhusbokning Lillälven</h1>
+  <div class="container">
+    <h1>Adminpanel för Ridhusbokning</h1>
 
-  <div id="accessCodeContainer">
-    <h2>Ange åtkomstkod</h2>
-    <input type="password" id="accessCodeInput" placeholder="Ange kod" style="width: calc(100% - 20px); padding: 10px; border-radius: 4px; font-size: 16px;">
-    <button class="button" onclick="checkAccessCode()">Bekräfta kod</button>
+    <h2>Lägg till en specifik tillgänglig tid</h2>
+    <label for="availableDate">Datum:</label>
+    <input type="date" id="availableDate">
+    <label for="startTime">Starttid:</label>
+    <select id="startTime"></select>
+    <label for="endTime">Sluttid:</label>
+    <select id="endTime"></select>
+    <label for="maxBookings">Max bokningar per tidslucka:</label>
+    <input type="number" id="maxBookings" value="4" min="1" max="10">
+    <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
+
+    <h2>Tillgängliga tider för vald dag</h2>
+    <input type="date" id="datePicker" onchange="loadAvailableTimes()">
+    <div id="availableTimeSlots"></div>
+
+    <h2>Bokningar för vald tid</h2>
+    <div id="bookingsContainer"></div>
   </div>
 
-  <div id="adminContent" style="display:none;">
-    <div class="container">
-      <h2>Lägg till en specifik tillgänglig tid</h2>
-      <label for="availableDate">Datum:</label>
-      <input type="date" id="availableDate">
-
-      <label for="startTime">Starttid:</label>
-      <select id="startTime"></select>
-
-      <label for="endTime">Sluttid:</label>
-      <select id="endTime"></select>
-
-      <label for="maxBookings">Max bokningar per tidslucka:</label>
-      <select id="maxBookings">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4" selected>4</option>
-      </select>
-
-      <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
-    </div>
-
-    <div class="container">
-      <h2>Tillgängliga tider för vald dag</h2>
-      <input type="date" id="datePicker" onchange="loadAvailableTimes(); loadBookings();">
-      <div id="availableTimeSlots"></div>
-    </div>
-
-    <div class="container">
-      <h2>Bokningar för vald tid</h2>
-      <div id="bookingsContainer"></div>
-    </div>
-  </div>
-
+  <!-- Firebase SDK version 8.x -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
@@ -144,29 +124,17 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    function checkAccessCode() {
-      const enteredCode = document.getElementById("accessCodeInput").value;
-      if (enteredCode === "0570") {
-        document.getElementById("accessCodeContainer").style.display = "none";
-        document.getElementById("adminContent").style.display = "block";
-        populateTimeDropdowns();
-        setDefaultDate();
-      } else {
-        alert("Fel kod. Åtkomst nekas.");
-      }
-    }
-
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
       const endTimeDropdown = document.getElementById("endTime");
-
       for (let hour = 8; hour <= 22; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-          const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-          const option = new Option(time, time);
-          startTimeDropdown.add(option.cloneNode(true));
-          endTimeDropdown.add(option);
-        }
+        ["00", "30"].forEach((minute) => {
+          const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+          const option1 = new Option(time, time);
+          const option2 = new Option(time, time);
+          startTimeDropdown.add(option1);
+          endTimeDropdown.add(option2);
+        });
       }
     }
 
@@ -174,27 +142,20 @@
       const date = document.getElementById("availableDate").value;
       const startTime = document.getElementById("startTime").value;
       const endTime = document.getElementById("endTime").value;
-      const maxBookings = document.getElementById("maxBookings").value;
+      const maxBookings = parseInt(document.getElementById("maxBookings").value, 10);
 
-      if (!date || !startTime || !endTime) {
-        alert("Välj datum, starttid och sluttid.");
+      if (!date || !startTime || !endTime || startTime >= endTime) {
+        alert("Ange ett giltigt datum, starttid och sluttid.");
         return;
       }
 
-      const start = new Date(`1970-01-01T${startTime}:00`);
-      const end = new Date(`1970-01-01T${endTime}:00`);
-      if (end - start < 30 * 60 * 1000) {
-        alert("Sluttid måste vara minst 30 minuter efter starttid.");
-        return;
-      }
-
-      const timeSlot = `${startTime}-${endTime}`;
-      const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
-
-      availableTimeRef.set({ isAvailable: true, maxBookings: maxBookings }).then(() => {
+      db.collection("availableTimes").doc(date).collection("times").doc(`${startTime}-${endTime}`).set({
+        isAvailable: true,
+        maxBookings: maxBookings
+      }).then(() => {
         loadAvailableTimes();
       }).catch((error) => {
-        console.error("Fel vid tilläggning av tillgänglig tid:", error);
+        console.error("Fel vid tillägg av tillgänglig tid:", error);
       });
     }
 
@@ -210,10 +171,11 @@
           } else {
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
+              const maxBookings = doc.data().maxBookings || "Max ej angivet";
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
-              timeDiv.textContent = timeSlot;
-
+              timeDiv.textContent = `${timeSlot} - Max: ${maxBookings}`;
+              
               const deleteButton = document.createElement("button");
               deleteButton.textContent = "Ta bort tiden";
               deleteButton.className = "delete-button";
@@ -250,7 +212,7 @@
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
               const bookings = doc.data().bookings || [];
-              const maxBookings = bookings.length ? doc.data().maxBookings : "Max ej angivet";
+              const maxBookings = doc.data().maxBookings || "Max ej angivet";
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
@@ -262,7 +224,7 @@
                 bookingInfo.textContent = `${booking.name}`;
 
                 const deleteBookingButton = document.createElement("button");
-                deleteBookingButton.textContent = "Ta bort bokning";
+                deleteBookingButton.textContent = "Ta bort";
                 deleteBookingButton.className = "delete-button";
                 deleteBookingButton.onclick = () => deleteBooking(selectedDate, timeSlot, index);
                 bookingInfo.appendChild(deleteBookingButton);
@@ -279,38 +241,27 @@
       }
     }
 
-    function deleteBooking(date, timeSlot, bookingIndex) {
+    function deleteBooking(date, timeSlot, index) {
       const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-
       bookingRef.get().then((doc) => {
         if (doc.exists) {
           const bookings = doc.data().bookings || [];
-          if (bookingIndex >= 0 && bookingIndex < bookings.length) {
-            bookings.splice(bookingIndex, 1);
-            bookingRef.set({ bookings }).then(() => {
-              loadBookings();
-            });
-          }
+          bookings.splice(index, 1); // Ta bort bokningen
+          bookingRef.set({ bookings }).then(() => {
+            loadBookings();
+          });
         }
       }).catch((error) => {
-        console.error("Fel vid borttagning av bokning:", error);
+        console.error("Fel vid radering av bokning:", error);
       });
     }
 
-    function setDefaultDate() {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadAvailableTimes();
-      loadBookings();
-    }
-
+    populateTimeDropdowns();
     window.onload = () => {
-      populateTimeDropdowns();
-      setDefaultDate();
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById("availableDate").value = today;
+      document.getElementById("datePicker").value = today;
+      loadAvailableTimes();
     };
   </script>
 </body>
