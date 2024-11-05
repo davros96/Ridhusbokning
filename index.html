@@ -227,7 +227,7 @@
     function bookTimeSlot(date, timeSlot) {
       const name = prompt("Ange ditt namn för att boka tiden:");
       if (name) {
-        const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+        const bookingRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
         bookingRef.get().then((doc) => {
           if (doc.exists) {
