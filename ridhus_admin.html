@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Ridhus Admin Panel</title>
+  <title>Adminpanel för Ridhusbokning</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -72,9 +72,8 @@
       max-width: 550px;
       margin-left: auto;
       margin-right: auto;
-      flex-direction: column;
     }
-    .delete-button, .remove-booking-button {
+    .delete-button {
       padding: 8px 16px;
       font-size: 14px;
       color: #ffffff;
@@ -85,20 +84,15 @@
       transition: background-color 0.3s ease;
       margin-top: 5px;
     }
-    .delete-button:hover, .remove-booking-button:hover {
+    .delete-button:hover {
       background-color: #c82333;
-    }
-    .booked-info {
-      color: #721c24;
-      font-style: italic;
-      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <h1>Adminpanel för Ridhusbokning</h1>
 
-  <div id="adminContent" class="container" style="display: none;">
+  <div class="container">
     <h2>Lägg till en specifik tillgänglig tid</h2>
     <div class="available-times">
       <label for="availableDate">Datum:</label>
@@ -125,10 +119,10 @@
     <button class="button" onclick="clearOldBookings()">Rensa bokningar</button>
   </div>
 
-  <div id="availableTimesContainer" class="container" style="display: none;">
+  <div class="container">
     <h2>Tillgängliga tider för vald dag</h2>
     <input type="date" id="datePicker" onchange="loadAvailableTimes()">
-    <div id="availableTimeSlots" class="available-times"></div>
+    <div id="availableTimeSlots"></div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -139,8 +133,7 @@
     const userCode = prompt("Ange åtkomstkod:");
 
     if (userCode && userCode.trim() === accessCode) {
-      document.getElementById("adminContent").style.display = "block";
-      document.getElementById("availableTimesContainer").style.display = "block";
+      document.body.style.display = "block";
     } else {
       alert("Fel kod. Åtkomst nekas.");
       window.location.href = "https://www.example.com"; // Omdirigering vid fel kod
@@ -158,6 +151,16 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    function setDefaultDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
+      loadAvailableTimes();
+    }
 
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
@@ -183,6 +186,17 @@
         return;
       }
 
+      // Kontrollera att sluttiden är minst 30 minuter senare än starttiden
+      const [startHour, startMinute] = startTime.split(":").map(Number);
+      const [endHour, endMinute] = endTime.split(":").map(Number);
+      const start = new Date(0, 0, 0, startHour, startMinute);
+      const end = new Date(0, 0, 0, endHour, endMinute);
+
+      if (end - start < 30 * 60 * 1000) { // 30 minuter i millisekunder
+        alert("Sluttiden måste vara minst 30 minuter senare än starttiden.");
+        return;
+      }
+
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
@@ -204,7 +218,7 @@
       } else if (range === "2") {
         cutoffDate = new Date(today.setMonth(today.getMonth() - 2));
       } else {
-        cutoffDate = new Date(0); // Om "alla bokningar äldre än dagens datum" är valt, sätt cutoff till långt tillbaka
+        cutoffDate = new Date(0);
       }
 
       const cutoffDateString = cutoffDate.toISOString().split("T")[0];
@@ -213,7 +227,7 @@
         const deletePromises = [];
 
         snapshot.forEach((doc) => {
-          const bookingDate = doc.id; // Anta att doc.id är i formatet "yyyy-mm-dd"
+          const bookingDate = doc.id;
           if (bookingDate < cutoffDateString) {
             deletePromises.push(doc.ref.delete().then(() => {
               console.log("Rensade bokningar för datumet:", bookingDate);
@@ -226,7 +240,7 @@
         return Promise.all(deletePromises);
       }).then(() => {
         alert("Gamla bokningar har rensats.");
-        loadAvailableTimes(); // Uppdatera tillgängliga tider om det behövs
+        loadAvailableTimes();
       }).catch((error) => {
         console.error("Fel vid hämtning av bokningar:", error);
       });
@@ -240,7 +254,6 @@
       if (selectedDate) {
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
           if (snapshot.empty) {
-            console.log("Inga tillgängliga tider för valt datum:", selectedDate);
             availableTimeSlots.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
           } else {
             snapshot.forEach((doc) => {
@@ -250,13 +263,12 @@
               timeDiv.textContent = timeSlot;
 
               const deleteButton = document.createElement("button");
-              deleteButton.textContent = "Ta bort hela tiden";
+              deleteButton.textContent = "Ta bort tiden";
               deleteButton.className = "delete-button";
               deleteButton.onclick = () => deleteAvailableTime(selectedDate, timeSlot);
               timeDiv.appendChild(deleteButton);
 
               availableTimeSlots.appendChild(timeDiv);
-              console.log("Tillgänglig tid hämtad:", timeSlot);
             });
           }
         }).catch((error) => {
@@ -274,8 +286,10 @@
       });
     }
 
-    populateTimeDropdowns();
-    loadAvailableTimes();
+    window.onload = () => {
+      setDefaultDate();
+      populateTimeDropdowns();
+    };
   </script>
 </body>
 </html>
