@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Ridhusbokning Lillälven</title>
   <style>
+    /* Grundläggande stil för alla enheter */
     body {
       font-family: Arial, sans-serif;
       max-width: 700px;
@@ -25,6 +26,11 @@
       margin-left: auto;
       margin-right: auto;
     }
+    .image-container img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
     label {
       font-weight: bold;
       margin-top: 10px;
@@ -32,7 +38,7 @@
       color: #555;
     }
     input[type="date"] {
-      width: calc(100% - 20px);
+      width: 100%;
       padding: 10px;
       margin-top: 5px;
       border: 1px solid #ddd;
@@ -79,10 +85,33 @@
       cursor: not-allowed;
       color: #721c24;
     }
-    .image-container img {
-      width: 100%;
-      border-radius: 8px;
-      margin-bottom: 20px;
+
+    /* Media Query för mobiler (skärmar mindre än 600px) */
+    @media (max-width: 600px) {
+      h1, h2 {
+        font-size: 1.5em;
+      }
+      .container {
+        padding: 15px;
+      }
+      .button {
+        font-size: 14px;
+        padding: 10px;
+      }
+      input[type="date"] {
+        font-size: 14px;
+      }
+      .time-slot {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    /* Media Query för större skärmar (datorer och surfplattor) */
+    @media (min-width: 601px) {
+      body {
+        max-width: 800px;
+      }
     }
   </style>
 </head>
@@ -123,7 +152,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Sätt standarddatum till dagens datum
+    // Sätt dagens datum som standard
     function setDefaultDate() {
       const today = new Date();
       const yyyy = today.getFullYear();
