@@ -11,8 +11,8 @@
   </style>
 </head>
 <body>
-  <h1>Välkommen till Ridhusbokningen</h1>
-  <p>Välj en dag och boka en tillgänglig tid.</p>
+  <h1>Ridhusbokning</h1>
+  <p>Välj en tid att boka för den valda dagen. Varje tidslucka kan ha upp till 4 bokningar.</p>
 
   <!-- Välj en dag att visa tillgängliga tider för -->
   <h2>Välj en dag:</h2>
@@ -41,28 +41,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Ladda tillgängliga tider för vald dag
+    // Ladda tillgängliga tider för vald dag från `availableTimes`
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
       timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
 
       if (selectedDate) {
-        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((querySnapshot) => {
-          if (querySnapshot.empty) {
-            timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider för det valda datumet.</p>";
+        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
+          if (snapshot.empty) {
+            timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
           } else {
-            querySnapshot.forEach((doc) => {
-              const timeSlot = doc.id;
+            snapshot.forEach((doc) => {
+              const slot = doc.id;
               const slotDiv = document.createElement("div");
               slotDiv.className = "time-slot";
-              slotDiv.textContent = timeSlot;
-              slotDiv.onclick = () => bookTimeSlot(selectedDate, timeSlot);
-              
+              slotDiv.textContent = slot;
+              slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
+
               // Kontrollera hur många som har bokat för denna tid
-              db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((timeDoc) => {
-                if (timeDoc.exists) {
-                  const bookingsCount = timeDoc.data().bookings ? timeDoc.data().bookings.length : 0;
+              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((bookingDoc) => {
+                if (bookingDoc.exists) {
+                  const bookingsCount = bookingDoc.data().bookings ? bookingDoc.data().bookings.length : 0;
                   if (bookingsCount >= 4) {
                     slotDiv.classList.add("booked");
                     slotDiv.textContent += " - Fullbokad";
@@ -79,7 +79,7 @@
             });
           }
         }).catch((error) => {
-          console.error("Fel vid hämtning av tillgängliga tider: ", error);
+          console.error("Fel vid hämtning av tillgängliga tider:", error);
         });
       }
     }
