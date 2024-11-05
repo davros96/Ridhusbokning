@@ -157,38 +157,6 @@
       loadTimeSlots(); // Ladda tider för dagens datum
     }
 
-    async function chooseNextAvailableDate() {
-      const today = new Date();
-      let nextAvailableDate = null;
-
-      // Kolla nästa dag tills vi hittar en med tillgängliga tider
-      for (let i = 0; i < 30; i++) { // Kolla upp till 30 dagar framåt
-        const futureDate = new Date(today);
-        futureDate.setDate(today.getDate() + i);
-        const yyyy = futureDate.getFullYear();
-        const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(futureDate.getDate()).padStart(2, '0');
-        const dateString = `${yyyy}-${mm}-${dd}`;
-
-        try {
-          const snapshot = await db.collection("availableTimes").doc(dateString).collection("times").get();
-          if (!snapshot.empty) {
-            nextAvailableDate = dateString;
-            break; // Om vi har hittat ett tillgängligt datum, sluta söka
-          }
-        } catch (error) {
-          console.error("Fel vid sökning efter tillgängliga tider:", error);
-        }
-      }
-
-      if (nextAvailableDate) {
-        document.getElementById("datePicker").value = nextAvailableDate; // Sätt datumfältet till nästa tillgängliga datum
-        loadTimeSlots(); // Ladda tillgängliga tider för det datumet
-      } else {
-        alert("Inga tillgängliga datum hittades inom 30 dagar.");
-      }
-    }
-
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
@@ -201,19 +169,27 @@
           } else {
             snapshot.forEach((doc) => {
               const slot = doc.id;
-              const maxBookings = doc.data().maxBookings;
-              const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
-
               const slotDiv = document.createElement("div");
               slotDiv.className = "time-slot";
-              slotDiv.textContent = `${slot} - ${maxBookings - bookingsCount} platser kvar`;
+              slotDiv.textContent = slot;
               slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
 
-              if (bookingsCount >= maxBookings) {
-                slotDiv.classList.add("booked");
-                slotDiv.textContent += " - Fullbokad";
-                slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
-              }
+              // Kontrollera hur många som har bokat för denna tid
+              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
+                if (doc.exists) {
+                  const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
+                  const maxBookings = doc.data().maxBookings || 4;
+                  if (bookingsCount >= maxBookings) {
+                    slotDiv.classList.add("booked");
+                    slotDiv.textContent += " - Fullbokad";
+                    slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+                  } else {
+                    slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
+                  }
+                } else {
+                  slotDiv.textContent += " - 4 platser kvar";
+                }
+              });
 
               timeSlotsContainer.appendChild(slotDiv);
             });
@@ -224,10 +200,39 @@
       }
     }
 
+    function chooseNextAvailableDate() {
+      const today = new Date();
+      let nextAvailableDate = null;
+
+      // Kolla nästa dag tills vi hittar en med tillgängliga tider
+      for (let i = 0; i < 30; i++) { // Kolla upp till 30 dagar framåt
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + i);
+        const yyyy = futureDate.getFullYear();
+        const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(futureDate.getDate()).padStart(2, '0');
+        const dateString = `${yyyy}-${mm}-${dd}`;
+
+        db.collection("availableTimes").doc(dateString).collection("times").get().then((snapshot) => {
+          if (!snapshot.empty) {
+            nextAvailableDate = dateString;
+            document.getElementById("datePicker").value = nextAvailableDate; // Sätt datumfältet till nästa tillgängliga datum
+            loadTimeSlots(); // Ladda tillgängliga tider för det datumet
+          }
+        });
+        
+        if (nextAvailableDate) break; // Om vi har hittat ett tillgängligt datum, sluta söka
+      }
+
+      if (!nextAvailableDate) {
+        alert("Inga tillgängliga datum hittades inom 30 dagar.");
+      }
+    }
+
     function bookTimeSlot(date, timeSlot) {
       const name = prompt("Ange ditt namn för att boka tiden:");
       if (name) {
-        const bookingRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
+        const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
 
         bookingRef.get().then((doc) => {
           if (doc.exists) {
