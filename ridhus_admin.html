@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Adminpanel för Ridhusbokning</title>
+  <title>Adminpanel för Ridhusbokning Lillälven</title>
   <style>
     /* Grundläggande stil för alla enheter */
     body {
@@ -66,7 +66,7 @@
   </style>
 </head>
 <body>
-  <h1>Adminpanel för Ridhusbokning</h1>
+  <h1>Adminpanel för Ridhusbokning Lillälven</h1>
 
   <div class="container">
     <h2>Lägg till en specifik tillgänglig tid</h2>
@@ -105,6 +105,11 @@
     <h2>Tillgängliga tider för vald dag</h2>
     <input type="date" id="datePicker" onchange="loadAvailableTimes()">
     <div id="availableTimeSlots"></div>
+  </div>
+
+  <div class="container">
+    <h2>Bokningar för vald tid</h2>
+    <div id="bookingsContainer"></div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -146,6 +151,13 @@
 
       if (!date || !startTime || !endTime) {
         alert("Välj datum, starttid och sluttid.");
+        return;
+      }
+
+      const start = new Date(`1970-01-01T${startTime}:00`);
+      const end = new Date(`1970-01-01T${endTime}:00`);
+      if (end - start < 30 * 60 * 1000) { // Minst 30 minuter
+        alert("Sluttid måste vara minst 30 minuter efter starttid.");
         return;
       }
 
@@ -207,11 +219,11 @@
 
       const today = new Date();
       if (timeframe === "1") {
-        cutoffDate = new Date(today.setMonth(today.getMonth() - 1)); // 1 månad bakåt
+        cutoffDate = new Date(today.setMonth(today.getMonth() - 1));
       } else if (timeframe === "2") {
-        cutoffDate = new Date(today.setMonth(today.getMonth() - 2)); // 2 månader bakåt
+        cutoffDate = new Date(today.setMonth(today.getMonth() - 2));
       } else {
-        cutoffDate = new Date(0); // Alla bokningar
+        cutoffDate = new Date(0);
       }
 
       db.collection("bookings").get().then(snapshot => {
@@ -228,6 +240,52 @@
       });
     }
 
+    function loadBookings() {
+      const selectedDate = document.getElementById("datePicker").value;
+      const bookingsContainer = document.getElementById("bookingsContainer");
+      bookingsContainer.innerHTML = "";
+
+      if (selectedDate) {
+        db.collection("bookings").doc(selectedDate).collection("times").get().then(snapshot => {
+          snapshot.forEach(doc => {
+            const timeSlot = doc.id;
+            const bookings = doc.data().bookings || [];
+            const slotDiv = document.createElement("div");
+            slotDiv.className = "time-slot";
+            slotDiv.textContent = timeSlot + ": " + bookings.map(b => b.name).join(", ");
+
+            const removeButton = document.createElement("button");
+            removeButton.textContent = "Ta bort bokning";
+            removeButton.className = "delete-button";
+            removeButton.onclick = () => removeBooking(selectedDate, timeSlot);
+            slotDiv.appendChild(removeButton);
+            bookingsContainer.appendChild(slotDiv);
+          });
+        }).catch(error => {
+          console.error("Fel vid hämtning av bokningar:", error);
+        });
+      }
+    }
+
+    function removeBooking(date, timeSlot) {
+      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+      bookingRef.get().then(doc => {
+        if (doc.exists) {
+          const currentBookings = doc.data().bookings || [];
+          const nameToRemove = prompt("Ange namnet på personen som ska tas bort:");
+          if (nameToRemove) {
+            const updatedBookings = currentBookings.filter(b => b.name !== nameToRemove);
+            bookingRef.set({ bookings: updatedBookings }).then(() => {
+              console.log("Bokning borttagen för:", nameToRemove);
+              loadBookings();
+            });
+          }
+        }
+      }).catch(error => {
+        console.error("Fel vid borttagning av bokning:", error);
+      });
+    }
+
     window.onload = () => {
       populateTimeDropdowns();
       setDefaultDate();
@@ -239,7 +297,8 @@
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadAvailableTimes(); // Ladda tider för dagens datum
+      loadAvailableTimes();
+      loadBookings();
     }
   </script>
 </body>
