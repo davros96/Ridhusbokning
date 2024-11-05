@@ -66,10 +66,25 @@
 <body>
   <div class="container">
     <h1>Adminpanel för Ridhusbokning Lillälven</h1>
+    <div id="loginContainer">
+      <label for="accessCode">Ange kod för åtkomst:</label>
+      <input type="password" id="accessCode">
+      <button onclick="checkAccessCode()">Logga in</button>
+    </div>
 
-    <h2>Bokningar för vald tid</h2>
-    <input type="date" id="datePicker" onchange="loadBookings()">
-    <div id="bookingsContainer"></div>
+    <div id="adminContent" style="display: none;">
+      <h2>Bokningar för vald tid</h2>
+      <input type="date" id="datePicker" onchange="loadBookings()">
+      <div id="bookingsContainer"></div>
+      
+      <h2>Rensa gamla bokningar</h2>
+      <select id="deleteOption">
+        <option value="1">1 månad bakåt</option>
+        <option value="2">2 månader bakåt</option>
+        <option value="all">Rensa alla</option>
+      </select>
+      <button class="button" onclick="clearOldBookings()">Rensa bokningar</button>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -88,6 +103,25 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    const accessCode = "0570";
+
+    function checkAccessCode() {
+      const inputCode = document.getElementById("accessCode").value;
+      if (inputCode === accessCode) {
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+        setDefaultDate();
+      } else {
+        alert("Fel kod. Åtkomst nekas.");
+      }
+    }
+
+    function setDefaultDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById("datePicker").value = today;
+      loadBookings();
+    }
 
     function loadBookings() {
       const selectedDate = document.getElementById("datePicker").value;
@@ -136,9 +170,9 @@
       bookingRef.get().then((doc) => {
         if (doc.exists) {
           const bookings = doc.data().bookings || [];
-          bookings.splice(index, 1); // Ta bort bokningen
+          bookings.splice(index, 1);
           bookingRef.set({ bookings }).then(() => {
-            loadBookings(); // Uppdatera visningen efter borttagning
+            loadBookings();
           });
         }
       }).catch((error) => {
@@ -146,12 +180,38 @@
       });
     }
 
-    // Sätt dagens datum som standard
-    window.onload = () => {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById("datePicker").value = today;
-      loadBookings();
-    };
+    function clearOldBookings() {
+      const option = document.getElementById("deleteOption").value;
+      const currentDate = new Date();
+
+      db.collection("bookings").get().then((snapshot) => {
+        snapshot.forEach((doc) => {
+          const bookingDate = new Date(doc.id);
+          let shouldDelete = false;
+
+          if (option === "1") {
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(currentDate.getMonth() - 1);
+            if (bookingDate < oneMonthAgo) shouldDelete = true;
+          } else if (option === "2") {
+            const twoMonthsAgo = new Date();
+            twoMonthsAgo.setMonth(currentDate.getMonth() - 2);
+            if (bookingDate < twoMonthsAgo) shouldDelete = true;
+          } else if (option === "all") {
+            shouldDelete = true;
+          }
+
+          if (shouldDelete) {
+            db.collection("bookings").doc(doc.id).delete().then(() => {
+              console.log(`Bokning för ${doc.id} raderad`);
+              loadBookings();
+            }).catch((error) => {
+              console.error("Fel vid radering av bokning:", error);
+            });
+          }
+        });
+      });
+    }
   </script>
 </body>
 </html>
