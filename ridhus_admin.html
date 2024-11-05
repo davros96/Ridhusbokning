@@ -33,9 +33,9 @@
       display: block;
       color: #555;
     }
-    input[type="date"], select, input[type="number"] {
+    input[type="date"], select, input[type="number"], input[type="password"] {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       margin-top: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -45,9 +45,9 @@
     .button {
       display: block;
       width: 100%;
-      padding: 10px;
-      margin-top: 15px;
-      font-size: 16px;
+      padding: 8px;
+      margin-top: 10px;
+      font-size: 14px;
       color: #ffffff;
       background-color: #007bff;
       border: none;
@@ -63,7 +63,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 10px;
-      margin: 5px 0;
+      margin: 5px 20px;
       border: 1px solid #ddd;
       border-radius: 4px;
       background-color: #fafafa;
@@ -84,7 +84,14 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="loginContainer">
+    <h1>Adminpanel för Ridhusbokning</h1>
+    <label for="adminCode">Ange admin-kod för att få åtkomst:</label>
+    <input type="password" id="adminCode">
+    <button class="button" onclick="checkAdminCode()">Logga in</button>
+  </div>
+
+  <div class="container" id="adminContainer" style="display: none;">
     <h1>Adminpanel för Ridhusbokning</h1>
 
     <h2>Lägg till en specifik tillgänglig tid</h2>
@@ -123,6 +130,17 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    function checkAdminCode() {
+      const code = document.getElementById("adminCode").value;
+      if (code === "0570") {
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("adminContainer").style.display = "block";
+        loadAvailableTimes();
+      } else {
+        alert("Fel kod. Åtkomst nekas.");
+      }
+    }
 
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
@@ -212,15 +230,14 @@
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
               const bookings = doc.data().bookings || [];
-              const maxBookings = doc.data().maxBookings || "Max ej angivet";
+              const maxBookings = doc.data().maxBookings || 4;
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
-              timeDiv.textContent = `Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
+              timeDiv.textContent = `${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
 
               bookings.forEach((booking, index) => {
                 const bookingInfo = document.createElement("div");
-                bookingInfo.className = "booking-info";
                 bookingInfo.textContent = `${booking.name}`;
 
                 const deleteBookingButton = document.createElement("button");
