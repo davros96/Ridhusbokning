@@ -123,6 +123,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Sätt standarddatum till dagens datum
+    function setDefaultDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
+      loadTimeSlots(); // Ladda tider för dagens datum
+    }
+
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
@@ -194,6 +204,9 @@
         });
       }
     }
+
+    // Sätt dagens datum när sidan laddas
+    window.onload = setDefaultDate;
   </script>
 </body>
 </html>
