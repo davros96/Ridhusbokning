@@ -228,7 +228,7 @@
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
-      availableTimeRef.set({ isAvailable: true, maxBookings: maxBookings }).then(() => {
+      availableTimeRef.set({ isAvailable: true, maxBookings: parseInt(maxBookings) }).then(() => {
         loadAvailableTimes();
       }).catch((error) => {
         console.error("Fel vid tilläggning av tillgänglig tid:", error);
