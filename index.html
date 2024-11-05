@@ -114,10 +114,15 @@
   </style>
 </head>
 <body>
-  
-        
-        
-        <h2>Välj en dag att boka:</h2>
+  <div class="container">
+    <h1>Ridhusbokning</h1>
+    <div class="instruction-box">
+      <h2>Instruktioner</h2>
+      <p>1. Välj ett datum för bokning.</p>
+      <p>2. Klicka på en tillgänglig tid för att boka.</p>
+      <p>3. Ange ditt namn för att slutföra bokningen.</p>
+    </div>
+    <h2>Välj en dag att boka:</h2>
     <label for="datePicker">Datum:</label>
     <input type="date" id="datePicker" onchange="loadTimeSlots()">
     <button class="button" onclick="chooseNextAvailableDate()">Välj nästa tillgängliga datum</button>
@@ -148,40 +153,8 @@
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("datePicker").value = ${yyyy}-${mm}-${dd};
       loadTimeSlots(); // Ladda tider för dagens datum
-    }
-
-    async function chooseNextAvailableDate() {
-      const today = new Date();
-      let nextAvailableDate = null;
-
-      // Kolla nästa dag tills vi hittar en med tillgängliga tider
-      for (let i = 0; i < 30; i++) { // Kolla upp till 30 dagar framåt
-        const futureDate = new Date(today);
-        futureDate.setDate(today.getDate() + i);
-        const yyyy = futureDate.getFullYear();
-        const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(futureDate.getDate()).padStart(2, '0');
-        const dateString = `${yyyy}-${mm}-${dd}`;
-
-        try {
-          const snapshot = await db.collection("availableTimes").doc(dateString).collection("times").get();
-          if (!snapshot.empty) {
-            nextAvailableDate = dateString;
-            break; // Om vi har hittat ett tillgängligt datum, sluta söka
-          }
-        } catch (error) {
-          console.error("Fel vid sökning efter tillgängliga tider:", error);
-        }
-      }
-
-      if (nextAvailableDate) {
-        document.getElementById("datePicker").value = nextAvailableDate; // Sätt datumfältet till nästa tillgängliga datum
-        loadTimeSlots(); // Ladda tillgängliga tider för det datumet
-      } else {
-        alert("Inga tillgängliga datum hittades inom 30 dagar.");
-      }
     }
 
     function loadTimeSlots() {
@@ -211,7 +184,7 @@
                     slotDiv.textContent += " - Fullbokad";
                     slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
                   } else {
-                    slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
+                    slotDiv.textContent +=  - ${maxBookings - bookingsCount} platser kvar;
                   }
                 } else {
                   slotDiv.textContent += " - 4 platser kvar";
@@ -224,6 +197,35 @@
         }).catch((error) => {
           console.error("Fel vid hämtning av tillgängliga tider:", error);
         });
+      }
+    }
+
+    function chooseNextAvailableDate() {
+      const today = new Date();
+      let nextAvailableDate = null;
+
+      // Kolla nästa dag tills vi hittar en med tillgängliga tider
+      for (let i = 0; i < 30; i++) { // Kolla upp till 30 dagar framåt
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + i);
+        const yyyy = futureDate.getFullYear();
+        const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(futureDate.getDate()).padStart(2, '0');
+        const dateString = ${yyyy}-${mm}-${dd};
+
+        db.collection("availableTimes").doc(dateString).collection("times").get().then((snapshot) => {
+          if (!snapshot.empty) {
+            nextAvailableDate = dateString;
+            document.getElementById("datePicker").value = nextAvailableDate; // Sätt datumfältet till nästa tillgängliga datum
+            loadTimeSlots(); // Ladda tillgängliga tider för det datumet
+          }
+        });
+        
+        if (nextAvailableDate) break; // Om vi har hittat ett tillgängligt datum, sluta söka
+      }
+
+      if (!nextAvailableDate) {
+        alert("Inga tillgängliga datum hittades inom 30 dagar.");
       }
     }
 
