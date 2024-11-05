@@ -203,6 +203,7 @@
     function chooseNextAvailableDate() {
       const today = new Date();
       let nextAvailableDate = null;
+      let foundAvailableDate = false;
 
       // Kolla nästa dag tills vi hittar en med tillgängliga tider
       for (let i = 0; i < 30; i++) { // Kolla upp till 30 dagar framåt
@@ -214,19 +215,22 @@
         const dateString = `${yyyy}-${mm}-${dd}`;
 
         db.collection("availableTimes").doc(dateString).collection("times").get().then((snapshot) => {
-          if (!snapshot.empty) {
+          if (!snapshot.empty && !foundAvailableDate) {
             nextAvailableDate = dateString;
             document.getElementById("datePicker").value = nextAvailableDate; // Sätt datumfältet till nästa tillgängliga datum
             loadTimeSlots(); // Ladda tillgängliga tider för det datumet
+            foundAvailableDate = true; // Markera att ett tillgängligt datum har hittats
           }
         });
-        
-        if (nextAvailableDate) break; // Om vi har hittat ett tillgängligt datum, sluta söka
+
+        if (foundAvailableDate) break; // Om vi har hittat ett tillgängligt datum, sluta söka
       }
 
-      if (!nextAvailableDate) {
-        alert("Inga tillgängliga datum hittades inom 30 dagar.");
-      }
+      setTimeout(() => {
+        if (!foundAvailableDate) {
+          alert("Inga tillgängliga datum hittades inom 30 dagar.");
+        }
+      }, 1000); // Vänta lite för att säkerställa att async-anropen är färdiga
     }
 
     function bookTimeSlot(date, timeSlot) {
