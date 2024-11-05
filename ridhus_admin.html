@@ -23,23 +23,23 @@
       margin-top: 20px;
     }
     .button {
-      padding: 12px 24px;
+      padding: 10px 20px;
       margin-top: 10px;
-      font-size: 16px;
+      font-size: 15px;
       color: #ffffff;
       background-color: #007bff;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      width: 100%;
+      text-align: center;
     }
     .button:hover {
       background-color: #0056b3;
     }
     input[type="date"], select {
       width: calc(100% - 20px);
-      padding: 10px;
+      padding: 8px;
       margin-top: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -69,7 +69,7 @@
       border-radius: 4px;
     }
     .delete-button {
-      padding: 8px 16px;
+      padding: 6px 12px;
       font-size: 14px;
       color: #ffffff;
       background-color: #dc3545;
@@ -250,10 +250,11 @@
             snapshot.forEach((doc) => {
               const timeSlot = doc.id;
               const bookings = doc.data().bookings || [];
+              const maxBookings = bookings.length ? doc.data().maxBookings : "Max ej angivet";
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
-              timeDiv.textContent = `Tid: ${timeSlot}`;
+              timeDiv.textContent = `Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
 
               bookings.forEach((booking, index) => {
                 const bookingInfo = document.createElement("div");
@@ -292,7 +293,7 @@
           }
         }
       }).catch((error) => {
-        console.error("Fel vid radering av bokning:", error);
+        console.error("Fel vid borttagning av bokning:", error);
       });
     }
 
