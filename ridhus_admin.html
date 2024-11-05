@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Adminpanel för Ridhusbokning Lillälven</title>
   <style>
+    /* Grundläggande stil för alla enheter */
     body {
       font-family: Arial, sans-serif;
       max-width: 700px;
@@ -22,24 +23,7 @@
       padding: 20px;
       margin-top: 20px;
     }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-      color: #555;
-    }
-    input[type="date"], select {
-      width: calc(100% - 20px);
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 16px;
-      color: #333;
-      background-color: #fafafa;
-    }
     .button {
-      display: inline-block;
       padding: 12px 24px;
       margin-top: 10px;
       font-size: 16px;
@@ -49,7 +33,6 @@
       border-radius: 5px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      text-align: center;
       width: 100%;
     }
     .button:hover {
@@ -66,7 +49,6 @@
       background-color: #fafafa;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
-      cursor: pointer;
     }
     .delete-button {
       padding: 8px 16px;
@@ -89,37 +71,24 @@
 
   <div class="container">
     <h2>Lägg till en specifik tillgänglig tid</h2>
-    <div class="available-times">
-      <label for="availableDate">Datum:</label>
-      <input type="date" id="availableDate">
-      
-      <label for="startTime">Starttid:</label>
-      <select id="startTime"></select>
-      
-      <label for="endTime">Sluttid:</label>
-      <select id="endTime"></select>
+    <label for="availableDate">Datum:</label>
+    <input type="date" id="availableDate">
+    
+    <label for="startTime">Starttid:</label>
+    <select id="startTime"></select>
+    
+    <label for="endTime">Sluttid:</label>
+    <select id="endTime"></select>
 
-      <label for="maxBookings">Max bokningar per tidslucka:</label>
-      <select id="maxBookings">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4" selected>4</option>
-      </select>
-      
-      <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
-    </div>
-  </div>
-
-  <div class="container">
-    <h2>Rensa gamla bokningar</h2>
-    <label for="deleteRange">Välj tidsram för rensning:</label>
-    <select id="deleteRange">
-      <option value="1">1 månad bakåt</option>
-      <option value="2">2 månader bakåt</option>
-      <option value="all">Alla bokningar äldre än dagens datum</option>
+    <label for="maxBookings">Max bokningar per tidslucka:</label>
+    <select id="maxBookings">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4" selected>4</option>
     </select>
-    <button class="button" onclick="clearOldBookings()">Rensa bokningar</button>
+    
+    <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
   </div>
 
   <div class="container">
@@ -128,26 +97,10 @@
     <div id="availableTimeSlots"></div>
   </div>
 
-  <div class="container">
-    <h2>Bokningar för vald dag</h2>
-    <input type="date" id="bookingDatePicker" onchange="loadBookings()">
-    <div id="bookingList"></div>
-  </div>
-
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
-    const accessCode = "0570";
-    const userCode = prompt("Ange åtkomstkod:");
-
-    if (userCode && userCode.trim() === accessCode) {
-      document.body.style.display = "block";
-    } else {
-      alert("Fel kod. Åtkomst nekas.");
-      window.location.href = "https://www.example.com"; // Omdirigering vid fel kod
-    }
-
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -160,18 +113,6 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-
-    function setDefaultDate() {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById("bookingDatePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadAvailableTimes();
-      loadBookings();
-    }
 
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
@@ -198,16 +139,6 @@
         return;
       }
 
-      const [startHour, startMinute] = startTime.split(":").map(Number);
-      const [endHour, endMinute] = endTime.split(":").map(Number);
-      const start = new Date(0, 0, 0, startHour, startMinute);
-      const end = new Date(0, 0, 0, endHour, endMinute);
-
-      if (end - start < 30 * 60 * 1000) {
-        alert("Sluttiden måste vara minst 30 minuter senare än starttiden.");
-        return;
-      }
-
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
@@ -216,44 +147,6 @@
         loadAvailableTimes();
       }).catch((error) => {
         console.error("Fel vid tilläggning av tillgänglig tid:", error);
-      });
-    }
-
-    function clearOldBookings() {
-      const range = document.getElementById("deleteRange").value;
-      const today = new Date();
-      let cutoffDate;
-
-      if (range === "1") {
-        cutoffDate = new Date(today.setMonth(today.getMonth() - 1));
-      } else if (range === "2") {
-        cutoffDate = new Date(today.setMonth(today.getMonth() - 2));
-      } else {
-        cutoffDate = new Date(0);
-      }
-
-      const cutoffDateString = cutoffDate.toISOString().split("T")[0];
-
-      db.collection("bookings").get().then((snapshot) => {
-        const deletePromises = [];
-
-        snapshot.forEach((doc) => {
-          const bookingDate = doc.id;
-          if (bookingDate < cutoffDateString) {
-            deletePromises.push(doc.ref.delete().then(() => {
-              console.log("Rensade bokningar för datumet:", bookingDate);
-            }).catch((error) => {
-              console.error("Fel vid rensning av bokning:", error);
-            }));
-          }
-        });
-
-        return Promise.all(deletePromises);
-      }).then(() => {
-        alert("Gamla bokningar har rensats.");
-        loadAvailableTimes();
-      }).catch((error) => {
-        console.error("Fel vid hämtning av bokningar:", error);
       });
     }
 
@@ -288,64 +181,29 @@
       }
     }
 
-    function loadBookings() {
-      const selectedDate = document.getElementById("bookingDatePicker").value;
-      const bookingList = document.getElementById("bookingList");
-      bookingList.innerHTML = "";
-
-      if (selectedDate) {
-        db.collection("bookings").doc(selectedDate).collection("times").get().then((snapshot) => {
-          if (snapshot.empty) {
-            bookingList.innerHTML = "<p>Inga bokningar hittades för denna dag.</p>";
-          } else {
-            snapshot.forEach((doc) => {
-              const timeSlot = doc.id;
-              const bookings = doc.data().bookings || [];
-              const timeDiv = document.createElement("div");
-              timeDiv.className = "time-slot";
-              timeDiv.textContent = `${timeSlot}: ${bookings.map(b => b.name).join(', ')}`;
-
-              // Ta bort bokning för en specifik person
-              bookings.forEach(booking => {
-                const removeButton = document.createElement("button");
-                removeButton.textContent = "Ta bort " + booking.name;
-                removeButton.className = "delete-button";
-                removeButton.onclick = () => removeBooking(selectedDate, timeSlot, booking.name);
-                timeDiv.appendChild(removeButton);
-              });
-
-              bookingList.appendChild(timeDiv);
-            });
-          }
-        }).catch((error) => {
-          console.error("Fel vid hämtning av bokningar:", error);
-        });
-      }
-    }
-
-    function removeBooking(date, timeSlot, name) {
-      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
-      bookingRef.get().then((doc) => {
-        if (doc.exists) {
-          const bookings = doc.data().bookings || [];
-          const updatedBookings = bookings.filter(booking => booking.name !== name);
-
-          bookingRef.set({ bookings: updatedBookings }).then(() => {
-            alert(name + " har tagits bort från bokningen.");
-            loadBookings(); // Uppdatera listan med bokningar
-          });
-        } else {
-          alert("Ingen bokning hittades för den här tidsluckan.");
-        }
+    function deleteAvailableTime(date, timeSlot) {
+      const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
+      availableTimeRef.delete().then(() => {
+        console.log("Tid borttagen:", timeSlot);
+        loadAvailableTimes(); // Uppdatera listan
       }).catch((error) => {
-        console.error("Fel vid borttagning av bokning:", error);
+        console.error("Fel vid borttagning av tid:", error);
       });
     }
 
     window.onload = () => {
-      setDefaultDate();
       populateTimeDropdowns();
+      setDefaultDate();
     };
+
+    function setDefaultDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
+      loadAvailableTimes(); // Ladda tider för dagens datum
+    }
   </script>
 </body>
 </html>
