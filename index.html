@@ -157,49 +157,6 @@
       loadTimeSlots(); // Ladda tider för dagens datum
     }
 
-    function loadTimeSlots() {
-      const selectedDate = document.getElementById("datePicker").value;
-      const timeSlotsContainer = document.getElementById("timeSlots");
-      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
-
-      if (selectedDate) {
-        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
-          if (snapshot.empty) {
-            timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
-          } else {
-            snapshot.forEach((doc) => {
-              const slot = doc.id;
-              const slotDiv = document.createElement("div");
-              slotDiv.className = "time-slot";
-              slotDiv.textContent = slot;
-              slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
-
-              // Kontrollera hur många som har bokat för denna tid
-              db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
-                if (doc.exists) {
-                  const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
-                  const maxBookings = doc.data().maxBookings || 4;
-                  if (bookingsCount >= maxBookings) {
-                    slotDiv.classList.add("booked");
-                    slotDiv.textContent += " - Fullbokad";
-                    slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
-                  } else {
-                    slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
-                  }
-                } else {
-                  slotDiv.textContent += " - 4 platser kvar";
-                }
-              });
-
-              timeSlotsContainer.appendChild(slotDiv);
-            });
-          }
-        }).catch((error) => {
-          console.error("Fel vid hämtning av tillgängliga tider:", error);
-        });
-      }
-    }
-
     async function chooseNextAvailableDate() {
       const today = new Date();
       let nextAvailableDate = null;
@@ -232,6 +189,41 @@
       }
     }
 
+    function loadTimeSlots() {
+      const selectedDate = document.getElementById("datePicker").value;
+      const timeSlotsContainer = document.getElementById("timeSlots");
+      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
+
+      if (selectedDate) {
+        db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
+          if (snapshot.empty) {
+            timeSlotsContainer.innerHTML = "<p>Inga tillgängliga tider hittades för denna dag.</p>";
+          } else {
+            snapshot.forEach((doc) => {
+              const slot = doc.id;
+              const maxBookings = doc.data().maxBookings;
+              const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
+
+              const slotDiv = document.createElement("div");
+              slotDiv.className = "time-slot";
+              slotDiv.textContent = `${slot} - ${maxBookings - bookingsCount} platser kvar`;
+              slotDiv.onclick = () => bookTimeSlot(selectedDate, slot);
+
+              if (bookingsCount >= maxBookings) {
+                slotDiv.classList.add("booked");
+                slotDiv.textContent += " - Fullbokad";
+                slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+              }
+
+              timeSlotsContainer.appendChild(slotDiv);
+            });
+          }
+        }).catch((error) => {
+          console.error("Fel vid hämtning av tillgängliga tider:", error);
+        });
+      }
+    }
+
     function bookTimeSlot(date, timeSlot) {
       const name = prompt("Ange ditt namn för att boka tiden:");
       if (name) {
@@ -243,7 +235,7 @@
             const maxBookings = doc.data().maxBookings || 4;
             if (currentBookings.length < maxBookings) {
               currentBookings.push({ name: name, timestamp: new Date() });
-              bookingRef.set({ bookings: currentBookings }).then(() => {
+              bookingRef.set({ bookings: currentBookings, maxBookings: maxBookings }).then(() => {
                 alert("Bokning lyckades!");
                 loadTimeSlots(); // Uppdatera tiden som bokad
               });
@@ -251,7 +243,7 @@
               alert("Denna tid är fullbokad.");
             }
           } else {
-            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
+            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }], maxBookings: 4 }).then(() => {
               alert("Bokning lyckades!");
               loadTimeSlots(); // Uppdatera tiden som bokad
             });
