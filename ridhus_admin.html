@@ -21,6 +21,9 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
       margin-top: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
     }
     label {
       font-weight: bold;
@@ -29,7 +32,7 @@
       color: #555;
     }
     input[type="date"], select {
-      width: 100%;
+      width: calc(100% - 20px);
       padding: 10px;
       margin-top: 5px;
       border: 1px solid #ddd;
@@ -50,6 +53,7 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
       text-align: center;
+      width: 100%;
     }
     .button:hover {
       background-color: #0056b3;
@@ -65,8 +69,12 @@
       background-color: #fafafa;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       color: #333;
+      max-width: 550px;
+      margin-left: auto;
+      margin-right: auto;
+      flex-direction: column;
     }
-    .delete-button {
+    .delete-button, .remove-booking-button {
       padding: 8px 16px;
       font-size: 14px;
       color: #ffffff;
@@ -75,8 +83,9 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      margin-top: 5px;
     }
-    .delete-button:hover {
+    .delete-button:hover, .remove-booking-button:hover {
       background-color: #c82333;
     }
     .booked-info {
@@ -115,11 +124,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
-    // Kontrollera åtkomst med kod
     const accessCode = "0570"; // Åtkomstkoden
     const userCode = prompt("Ange åtkomstkod:");
 
-    // Kontrollera om användaren angav rätt kod
     if (userCode && userCode.trim() === accessCode) {
       document.getElementById("adminContent").style.display = "block";
       document.getElementById("availableTimesContainer").style.display = "block";
@@ -165,17 +172,6 @@
         return;
       }
 
-      const [startHour, startMinute] = startTime.split(":").map(Number);
-      const [endHour, endMinute] = endTime.split(":").map(Number);
-      const startDate = new Date(0, 0, 0, startHour, startMinute);
-      const endDate = new Date(0, 0, 0, endHour, endMinute);
-      const timeDifference = (endDate - startDate) / (1000 * 60);
-
-      if (timeDifference < 30) {
-        alert("Tidsluckan måste vara minst 30 minuter.");
-        return;
-      }
-
       const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
@@ -207,19 +203,26 @@
               db.collection("bookings").doc(selectedDate).collection("times").doc(timeSlot).get().then((bookingDoc) => {
                 if (bookingDoc.exists) {
                   const bookings = bookingDoc.data().bookings || [];
-                  if (bookings.length > 0) {
-                    const bookedInfo = document.createElement("div");
-                    bookedInfo.className = "booked-info";
-                    bookedInfo.textContent = `Bokad av: ${bookings.map(b => b.name).join(', ')}`;
-                    timeDiv.appendChild(bookedInfo);
-                  }
+                  bookings.forEach((booking, index) => {
+                    const bookingInfo = document.createElement("div");
+                    bookingInfo.className = "booked-info";
+                    bookingInfo.textContent = `Bokad av: ${booking.name}`;
+
+                    const removeBookingButton = document.createElement("button");
+                    removeBookingButton.className = "remove-booking-button";
+                    removeBookingButton.textContent = "Ta bort bokning";
+                    removeBookingButton.onclick = () => removeBooking(selectedDate, timeSlot, index);
+
+                    bookingInfo.appendChild(removeBookingButton);
+                    timeDiv.appendChild(bookingInfo);
+                  });
                 }
               }).catch((error) => {
                 console.error("Fel vid hämtning av bokningsinformation:", error);
               });
 
               const deleteButton = document.createElement("button");
-              deleteButton.textContent = "Ta bort";
+              deleteButton.textContent = "Ta bort hela tiden";
               deleteButton.className = "delete-button";
               deleteButton.onclick = () => deleteAvailableTime(selectedDate, timeSlot);
               timeDiv.appendChild(deleteButton);
@@ -232,6 +235,24 @@
           console.error("Fel vid hämtning av tillgängliga tider:", error);
         });
       }
+    }
+
+    function removeBooking(date, timeSlot, bookingIndex) {
+      const bookingRef = db.collection("bookings").doc(date).collection("times").doc(timeSlot);
+
+      bookingRef.get().then((doc) => {
+        if (doc.exists) {
+          const bookings = doc.data().bookings || [];
+          bookings.splice(bookingIndex, 1); // Ta bort bokningen från listan
+
+          bookingRef.update({ bookings: bookings }).then(() => {
+            alert("Bokningen har tagits bort.");
+            loadAvailableTimes(); // Uppdatera vyn
+          }).catch((error) => {
+            console.error("Fel vid uppdatering av bokningar:", error);
+          });
+        }
+      });
     }
 
     function deleteAvailableTime(date, timeSlot) {
