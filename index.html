@@ -21,12 +21,12 @@
       background-color: rgba(255, 255, 255, 0.85);
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      max-width: 600px;
+      padding: 30px; /* Ökar padding för att skapa en luftigare känsla */
+      max-width: 800px; /* Gör rutan större i x-led */
       width: 100%;
       text-align: center;
       box-sizing: border-box;
-      margin: 0 20px; /* Lägger till marginal på sidorna */
+      margin: 0 20px;
     }
     h1, h2 {
       color: #333;
@@ -48,7 +48,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 10px;
-      margin: 5px 20px; /* Justerar marginalen för att centrera i containern */
+      margin: 5px 20px;
       border: 1px solid #ddd;
       border-radius: 4px;
       background-color: #fafafa;
@@ -83,7 +83,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
-    // Firebase-konfiguration från Firebase Console
     const firebaseConfig = {
       apiKey: "API_KEY",
       authDomain: "bokning---ridhus.firebaseapp.com",
@@ -97,20 +96,19 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Sätt dagens datum som standard
     function setDefaultDate() {
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadTimeSlots(); // Ladda tider för dagens datum
+      loadTimeSlots();
     }
 
     function loadTimeSlots() {
       const selectedDate = document.getElementById("datePicker").value;
       const timeSlotsContainer = document.getElementById("timeSlots");
-      timeSlotsContainer.innerHTML = ""; // Rensa gamla tider
+      timeSlotsContainer.innerHTML = "";
 
       if (selectedDate) {
         db.collection("availableTimes").doc(selectedDate).collection("times").get().then((snapshot) => {
@@ -127,11 +125,11 @@
               db.collection("bookings").doc(selectedDate).collection("times").doc(slot).get().then((doc) => {
                 if (doc.exists) {
                   const bookingsCount = doc.data().bookings ? doc.data().bookings.length : 0;
-                  const maxBookings = doc.data().maxBookings || 4; // Använd max antal bokningar om satt
+                  const maxBookings = doc.data().maxBookings || 4;
                   if (bookingsCount >= maxBookings) {
                     slotDiv.classList.add("booked");
                     slotDiv.textContent += " - Fullbokad";
-                    slotDiv.onclick = null; // Avaktivera klick på fullbokade tider
+                    slotDiv.onclick = null;
                   } else {
                     slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
                   }
@@ -162,7 +160,7 @@
               currentBookings.push({ name: name, timestamp: new Date() });
               bookingRef.set({ bookings: currentBookings }).then(() => {
                 alert("Bokning lyckades!");
-                loadTimeSlots(); // Uppdatera tiden som bokad
+                loadTimeSlots();
               });
             } else {
               alert("Denna tid är fullbokad.");
@@ -170,7 +168,7 @@
           } else {
             bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }] }).then(() => {
               alert("Bokning lyckades!");
-              loadTimeSlots(); // Uppdatera tiden som bokad
+              loadTimeSlots();
             });
           }
         }).catch((error) => {
@@ -179,7 +177,6 @@
       }
     }
 
-    // Sätt dagens datum när sidan laddas
     window.onload = setDefaultDate;
   </script>
 </body>
