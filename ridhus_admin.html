@@ -23,7 +23,7 @@
       max-width: 700px;
       border-radius: 5px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      display: none; /* Dold som standard */
+      display: none;
     }
     .instruction-box h2 {
       margin-top: 0;
@@ -168,13 +168,13 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "API_KEY",
-      authDomain: "bokning---ridhus.firebaseapp.com",
-      projectId: "bokning---ridhus",
-      storageBucket: "bokning---ridhus.firebasestorage.app",
-      messagingSenderId: "950961153911",
-      appId: "1:950961153911:web:8048686c4b5bf6ff18a372",
-      measurementId: "G-1NPSSBC2CW"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -307,7 +307,7 @@
               bookings.forEach((booking, index) => {
                 const bookingInfo = document.createElement("div");
                 bookingInfo.className = "booking-info";
-                bookingInfo.textContent = `${booking.name}`;
+                bookingInfo.textContent = `Namn: ${booking.name}, Telefon: ${booking.phone}`;
 
                 const deleteBookingButton = document.createElement("button");
                 deleteBookingButton.textContent = "Ta bort bokning";
