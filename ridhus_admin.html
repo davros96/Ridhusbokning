@@ -199,7 +199,7 @@
 
       for (let hour = 8; hour <= 22; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
-          const time = ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')};
+          const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
           const option = new Option(time, time);
           startTimeDropdown.add(option.cloneNode(true));
           endTimeDropdown.add(option);
@@ -218,14 +218,14 @@
         return;
       }
 
-      const start = new Date(1970-01-01T${startTime}:00);
-      const end = new Date(1970-01-01T${endTime}:00);
+      const start = new Date(`1970-01-01T${startTime}:00`);
+      const end = new Date(`1970-01-01T${endTime}:00`);
       if (end - start < 30 * 60 * 1000) {
         alert("Sluttid måste vara minst 30 minuter efter starttid.");
         return;
       }
 
-      const timeSlot = ${startTime}-${endTime};
+      const timeSlot = `${startTime}-${endTime}`;
       const availableTimeRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
       try {
@@ -302,12 +302,12 @@
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
-              timeDiv.textContent = Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade;
+              timeDiv.textContent = `Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
 
               bookings.forEach((booking, index) => {
                 const bookingInfo = document.createElement("div");
                 bookingInfo.className = "booking-info";
-                bookingInfo.textContent = ${booking.name};
+                bookingInfo.textContent = booking.name;
 
                 const deleteBookingButton = document.createElement("button");
                 deleteBookingButton.textContent = "Ta bort bokning";
@@ -351,8 +351,8 @@
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("availableDate").value = ${yyyy}-${mm}-${dd};
-      document.getElementById("datePicker").value = ${yyyy}-${mm}-${dd};
+      document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
       loadAvailableTimes();
       loadBookings();
     }
