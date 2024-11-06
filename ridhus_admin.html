@@ -49,10 +49,9 @@
       max-width: 700px;
     }
     .calendar-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 20px;
+      margin-top: 20px;
+      text-align: center;
+      width: 100%;
     }
     .calendar {
       display: grid;
@@ -68,7 +67,6 @@
       background-color: #fafafa;
       text-align: center;
       font-size: 14px;
-      position: relative;
     }
     .day-cell .bookings-count {
       font-size: 12px;
@@ -110,26 +108,76 @@
 <body>
   <h1>Adminpanel för Ridhusbokning Lillälven</h1>
 
+  <!-- Kalenderöversikt -->
   <div class="calendar-container">
-    <h2>Bokningsöversikt för månaden</h2>
+    <h2>Bokningsöversikt för vald månad</h2>
     <input type="month" id="monthPicker" onchange="loadMonthlyBookings()">
     <div class="calendar" id="calendar"></div>
   </div>
 
-  <!-- Resterande kod för att lägga till specifika tider, visa bokningar och ta bort tider/bokningar -->
+  <div class="instruction-box" id="instructionBox">
+    <h2>Instruktioner för Adminpanelen</h2>
+    <p>1. Ange åtkomstkoden för att låsa upp adminpanelen.</p>
+    <p>2. Under "Lägg till en specifik tillgänglig tid", välj datum, start- och sluttid samt max antal bokningar för att skapa en ny bokningsbar tid.</p>
+    <p>3. Under "Tillgängliga tider för vald dag", kan du se alla skapade tider för en viss dag och ta bort dem om nödvändigt.</p>
+    <p>4. Under "Bokningar för vald tid", välj ett datum för att se vilka bokningar som är gjorda, samt ta bort specifika bokningar om det behövs.</p>
+  </div>
+
+  <div id="accessCodeContainer">
+    <h2>Ange åtkomstkod</h2>
+    <input type="password" id="accessCodeInput" placeholder="Ange kod" onkeypress="if(event.key === 'Enter') checkAccessCode()" style="width: calc(100% - 20px); padding: 10px; border-radius: 4px; font-size: 16px;">
+    <button class="button" onclick="checkAccessCode()">Bekräfta kod</button>
+  </div>
+
+  <div id="adminContent" style="display:none;">
+    <div class="container">
+      <h2>Lägg till en specifik tillgänglig tid</h2>
+      <label for="availableDate">Datum:</label>
+      <input type="date" id="availableDate">
+
+      <label for="startTime">Starttid:</label>
+      <select id="startTime"></select>
+
+      <label for="endTime">Sluttid:</label>
+      <select id="endTime"></select>
+
+      <label for="maxBookings">Max bokningar per tidslucka:</label>
+      <select id="maxBookings">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+      </select>
+
+      <button class="button" onclick="addAvailableTime()">Lägg till specifik tid</button>
+    </div>
+
+    <div class="container">
+      <h2>Tillgängliga tider för vald dag</h2>
+      <input type="date" id="datePicker" onchange="loadAvailableTimes(); loadBookings();">
+      <div id="availableTimeSlots"></div>
+    </div>
+
+    <div class="container">
+      <h2>Bokningar för vald tid</h2>
+      <div id="bookingsContainer"></div>
+    </div>
+
+    <button class="button" onclick="loadAvailableTimes(); loadBookings()">Uppdatera</button>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID",
-      measurementId: "YOUR_MEASUREMENT_ID"
+      apiKey: "API_KEY",
+      authDomain: "bokning---ridhus.firebaseapp.com",
+      projectId: "bokning---ridhus",
+      storageBucket: "bokning---ridhus.firebasestorage.app",
+      messagingSenderId: "950961153911",
+      appId: "1:950961153911:web:8048686c4b5bf6ff18a372",
+      measurementId: "G-1NPSSBC2CW"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -143,7 +191,7 @@
         document.getElementById("instructionBox").style.display = "block";
         populateTimeDropdowns();
         setDefaultDate();
-        loadMonthlyBookings(); // Laddar månadsvyn vid inloggning
+        loadMonthlyBookings();
       } else {
         alert("Fel kod. Åtkomst nekas.");
       }
@@ -152,16 +200,14 @@
     async function loadMonthlyBookings() {
       const monthPicker = document.getElementById("monthPicker").value;
       if (!monthPicker) return;
+
       const [year, month] = monthPicker.split("-");
       const firstDayOfMonth = new Date(year, month - 1, 1);
       const lastDayOfMonth = new Date(year, month, 0);
       const totalDays = lastDayOfMonth.getDate();
-
-      // Rensa kalendern innan ny rendering
       const calendar = document.getElementById("calendar");
       calendar.innerHTML = "";
 
-      // Fyll kalendern med tomma celler för att justera startdatum
       const startDay = firstDayOfMonth.getDay();
       for (let i = 0; i < startDay; i++) {
         const emptyCell = document.createElement("div");
@@ -169,14 +215,12 @@
         calendar.appendChild(emptyCell);
       }
 
-      // Ladda bokningar och fyll kalendern med antal bokningar per dag
       for (let day = 1; day <= totalDays; day++) {
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayCell = document.createElement("div");
         dayCell.classList.add("day-cell");
         dayCell.innerHTML = `<strong>${day}</strong>`;
 
-        // Hämta bokningar för datumet
         const snapshot = await db.collection("availableTimes").doc(date).collection("times").get();
         const bookingCount = snapshot.docs.reduce((count, doc) => count + (doc.data().bookings?.length || 0), 0);
 
@@ -184,7 +228,7 @@
         bookingInfo.classList.add("bookings-count");
         bookingInfo.textContent = `Bokningar: ${bookingCount}`;
         dayCell.appendChild(bookingInfo);
-        
+
         calendar.appendChild(dayCell);
       }
     }
@@ -202,7 +246,48 @@
       }
     }
 
-    // Fortsättning på övriga funktioner för att hantera specifika tider, bokningar och borttagningar...
+    async function loadBookings() {
+      const selectedDate = document.getElementById("datePicker").value;
+      const bookingsContainer = document.getElementById("bookingsContainer");
+      bookingsContainer.innerHTML = "";
+
+      if (selectedDate) {
+        try {
+          const snapshot = await db.collection("availableTimes").doc(selectedDate).collection("times").get();
+          if (snapshot.empty) {
+            bookingsContainer.innerHTML = "<p>Inga bokningar hittades för denna dag.</p>";
+          } else {
+            snapshot.forEach((doc) => {
+              const timeSlot = doc.id;
+              const bookings = doc.data().bookings || [];
+              const maxBookings = doc.data().maxBookings;
+
+              const timeDiv = document.createElement("div");
+              timeDiv.className = "time-slot";
+              timeDiv.textContent = `Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
+
+              bookings.forEach((booking, index) => {
+                const bookingInfo = document.createElement("div");
+                bookingInfo.className = "booking-info";
+                bookingInfo.textContent = `Namn: ${booking.name}, Telefon: ${booking.phone}`;
+
+                const deleteBookingButton = document.createElement("button");
+                deleteBookingButton.textContent = "Ta bort bokning";
+                deleteBookingButton.className = "delete-button";
+                deleteBookingButton.onclick = () => deleteBooking(selectedDate, timeSlot, index);
+                bookingInfo.appendChild(deleteBookingButton);
+
+                timeDiv.appendChild(bookingInfo);
+              });
+
+              bookingsContainer.appendChild(timeDiv);
+            });
+          }
+        } catch (error) {
+          console.error("Fel vid hämtning av bokningar:", error);
+        }
+      }
+    }
   </script>
 </body>
 </html>
