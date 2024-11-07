@@ -21,6 +21,14 @@
       text-align: center;
       margin-bottom: 20px;
     }
+    .instruction-box {
+      background-color: #e7f3fe;
+      border: 1px solid #b3e5fc;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+      width: 100%;
+    }
     .tabs {
       display: flex;
       width: 100%;
@@ -137,6 +145,16 @@
 <body>
   <h1>Adminpanel för Ridhusbokning Lillälven</h1>
 
+  <div class="instruction-box">
+    <h2>Instruktioner för Admin:</h2>
+    <ul>
+      <li>Logga in med åtkomstkoden för att komma åt adminpanelen.</li>
+      <li>Gå till "Daglig bokningshantering" för att lägga till tillgängliga tider och se bokningar.</li>
+      <li>Under "Månadsöversikt" kan du se bokningar per månad och rensa gamla bokningar.</li>
+      <li>För att exportera bokningar, välj en månad och klicka på "Exportera till Excel".</li>
+    </ul>
+  </div>
+
   <div id="accessCodeContainer">
     <h2>Ange åtkomstkod</h2>
     <input type="password" id="accessCodeInput" placeholder="Ange kod" onkeypress="if(event.key === 'Enter') checkAccessCode()" style="width: calc(100% - 20px); padding: 10px; border-radius: 4px; font-size: 16px;">
@@ -188,16 +206,18 @@
     <div class="container">
       <h2>Bokningsöversikt för vald månad</h2>
       <input type="month" id="monthPicker" onchange="loadMonthlyBookings()">
+      <button class="button" onclick="exportBookingsToExcel()">Exportera till Excel</button>
       <button class="button" onclick="loadMonthlyBookings()">Uppdatera</button>
       <div class="calendar" id="calendar"></div>
     </div>
     <div class="container">
-      <button class="delete-button" onclick="clearOldBookings()">Rensa äldre bokningar</button>
+      <button class="delete-button" onclick="clearOldBookings()">Rensa bokningar äldre än innevarande månad minus en månad</button>
     </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "API_KEY",
@@ -453,38 +473,57 @@
 
     async function clearOldBookings() {
       const today = new Date();
-      const cutoffDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); // En månad före innevarande månad
+      const cutoffDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); 
       const formattedCutoffDate = cutoffDate.toISOString().split('T')[0];
       console.log("Cutoff Date (formatted):", formattedCutoffDate);
 
       try {
-        const timesSnapshot = await db.collectionGroup("times").get();
-        if (timesSnapshot.empty) {
-          console.log("No documents found in 'times' collection.");
+        const snapshot = await db.collection("availableTimes").get();
+        if (snapshot.empty) {
+          console.log("No documents found in 'availableTimes' collection.");
           return;
         }
 
-        const deletePromises = [];
-        timesSnapshot.forEach((timeDoc) => {
-          const dateDocId = timeDoc.ref.parent.parent.id; // Få datumet för detta tidsdokument
-          const timeDocId = timeDoc.id; // Få tidsdokumentets ID
-          const bookings = timeDoc.data().bookings || [];
-          const docDate = new Date(dateDocId);
-
-          if (docDate < cutoffDate) {
-            // Om datumet är äldre än cutoff-datumet, radera tiden
-            deletePromises.push(timeDoc.ref.delete());
-            console.log(`Deleted time document: ${dateDocId}/${timeDocId}`);
+        snapshot.forEach(async (doc) => {
+          const docDate = doc.id; // Date document ID
+          if (docDate < formattedCutoffDate) {
+            await db.collection("availableTimes").doc(doc.id).delete();
+            console.log(`Deleted document with date: ${doc.id}`);
           }
         });
 
-        // Vänta på att alla raderingar ska slutföras
-        await Promise.all(deletePromises);
-        alert("Bokningar och tider äldre än innevarande månad minus en månad har raderats.");
+        alert("Bokningar äldre än innevarande månad minus en månad har raderats.");
         loadMonthlyBookings();
       } catch (error) {
         console.error("Fel vid radering av gamla bokningar:", error);
       }
+    }
+
+    async function exportBookingsToExcel() {
+      const monthPicker = document.getElementById("monthPicker").value;
+      const [year, month] = monthPicker.split("-");
+      const firstDayOfMonth = new Date(year, month - 1, 1);
+      const lastDayOfMonth = new Date(year, month, 0);
+      const totalDays = lastDayOfMonth.getDate();
+
+      const workbook = XLSX.utils.book_new();
+      const worksheetData = [["Datum", "Tid", "Namn", "Telefonnummer"]]; // Headers
+
+      for (let day = 1; day <= totalDays; day++) {
+        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const snapshot = await db.collection("availableTimes").doc(date).collection("times").get();
+        
+        snapshot.forEach(doc => {
+          const bookings = doc.data().bookings || [];
+          bookings.forEach(booking => {
+            worksheetData.push([date, doc.id, booking.name, booking.phoneNumber, booking.timestamp]);
+          });
+        });
+      }
+
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Bokningar");
+      XLSX.writeFile(workbook, `Bokningar_${month}_${year}.xlsx`);
     }
   </script>
 </body>
