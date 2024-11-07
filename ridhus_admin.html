@@ -13,31 +13,41 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      color: #333;
     }
-    .instruction-box {
-      background-color: #e9f7ef;
-      border-left: 6px solid #28a745;
-      padding: 20px;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 700px;
-      border-radius: 5px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      display: none; /* Dold som standard */
-    }
-    .instruction-box h2 {
-      margin-top: 0;
-      font-size: 18px;
-      color: #155724;
-    }
-    .instruction-box p {
-      margin: 5px 0;
-      font-size: 15px;
-      color: #155724;
-    }
-    h1, h2 {
+    h1 {
+      font-size: 2em;
       color: #333;
       text-align: center;
+      margin-bottom: 20px;
+    }
+    .tabs {
+      display: flex;
+      width: 100%;
+      max-width: 700px;
+      margin-top: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+      border-bottom: 2px solid #ddd;
+      font-weight: bold;
+      color: #007bff;
+      transition: color 0.3s, border-bottom 0.3s;
+    }
+    .tab.active {
+      border-bottom: 2px solid #007bff;
+      color: #0056b3;
+    }
+    .tab-content {
+      display: none;
+      width: 100%;
+      max-width: 700px;
+    }
+    .tab-content.active {
+      display: block;
     }
     .container {
       background-color: #ffffff;
@@ -46,26 +56,68 @@
       padding: 20px;
       margin-top: 20px;
       width: 100%;
-      max-width: 700px;
     }
-    .button {
-      padding: 10px 20px;
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
       margin-top: 10px;
+    }
+    .day-cell {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fafafa;
+      text-align: center;
+      font-size: 14px;
+    }
+    .day-cell .booking-details {
+      font-size: 12px;
+      color: #333;
+      margin-top: 5px;
+    }
+    .day-cell.empty {
+      border: none;
+      background-color: transparent;
+    }
+    .button, .delete-button {
+      padding: 10px 20px;
       font-size: 15px;
       color: #ffffff;
-      background-color: #007bff;
       border: none;
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s ease;
       text-align: center;
+      margin-top: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .button {
+      background-color: #007bff;
     }
     .button:hover {
       background-color: #0056b3;
     }
-    input[type="date"], select {
+    .delete-button {
+      background-color: #dc3545;
+    }
+    .delete-button:hover {
+      background-color: #c82333;
+    }
+    .time-slot, .booking-info {
+      background-color: #f9f9f9;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-direction: column;
+    }
+    input[type="date"], input[type="month"], select {
       width: calc(100% - 20px);
-      padding: 8px;
+      padding: 10px;
       margin-top: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -74,51 +126,16 @@
       background-color: #fafafa;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    .time-slot {
-      display: flex;
-      flex-direction: column;
-      padding: 10px;
-      margin: 5px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background-color: #fafafa;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    label {
+      font-weight: bold;
       color: #333;
-    }
-    .booking-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 5px;
-      padding: 8px;
-      background-color: #f0f0f0;
-      border-radius: 4px;
-    }
-    .delete-button {
-      padding: 6px 12px;
-      font-size: 14px;
-      color: #ffffff;
-      background-color: #dc3545;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    .delete-button:hover {
-      background-color: #c82333;
+      margin-top: 10px;
+      display: block;
     }
   </style>
 </head>
 <body>
   <h1>Adminpanel för Ridhusbokning Lillälven</h1>
-
-  <div class="instruction-box" id="instructionBox">
-    <h2>Instruktioner för Adminpanelen</h2>
-    <p>1. Ange åtkomstkoden för att låsa upp adminpanelen.</p>
-    <p>2. Under "Lägg till en specifik tillgänglig tid", välj datum, start- och sluttid samt max antal bokningar för att skapa en ny bokningsbar tid.</p>
-    <p>3. Under "Tillgängliga tider för vald dag", kan du se alla skapade tider för en viss dag och ta bort dem om nödvändigt.</p>
-    <p>4. Under "Bokningar för vald tid", välj ett datum för att se vilka bokningar som är gjorda, samt ta bort specifika bokningar om det behövs.</p>
-  </div>
 
   <div id="accessCodeContainer">
     <h2>Ange åtkomstkod</h2>
@@ -126,7 +143,12 @@
     <button class="button" onclick="checkAccessCode()">Bekräfta kod</button>
   </div>
 
-  <div id="adminContent" style="display:none;">
+  <div class="tabs" style="display:none;" id="tabs">
+    <div class="tab active" onclick="switchTab('dailyManagement')">Daglig bokningshantering</div>
+    <div class="tab" onclick="switchTab('monthlyOverview')">Månadsöversikt</div>
+  </div>
+
+  <div id="dailyManagement" class="tab-content active" style="display:none;">
     <div class="container">
       <h2>Lägg till en specifik tillgänglig tid</h2>
       <label for="availableDate">Datum:</label>
@@ -159,13 +181,23 @@
       <h2>Bokningar för vald tid</h2>
       <div id="bookingsContainer"></div>
     </div>
-
     <button class="button" onclick="loadAvailableTimes(); loadBookings()">Uppdatera</button>
+  </div>
+
+  <div id="monthlyOverview" class="tab-content" style="display:none;">
+    <div class="container">
+      <h2>Bokningsöversikt för vald månad</h2>
+      <input type="month" id="monthPicker" onchange="loadMonthlyBookings()">
+      <button class="button" onclick="loadMonthlyBookings()">Uppdatera</button>
+      <div class="calendar" id="calendar"></div>
+    </div>
+    <div class="container">
+      <button class="delete-button" onclick="clearOldBookings()">Rensa äldre bokningar</button>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "API_KEY",
@@ -184,18 +216,47 @@
       const enteredCode = document.getElementById("accessCodeInput").value;
       if (enteredCode === "0570") {
         document.getElementById("accessCodeContainer").style.display = "none";
-        document.getElementById("adminContent").style.display = "block";
-        document.getElementById("instructionBox").style.display = "block";
+        document.getElementById("tabs").style.display = "flex";
+        document.getElementById("dailyManagement").style.display = "block";
         populateTimeDropdowns();
         setDefaultDate();
+        setDefaultMonth();
       } else {
         alert("Fel kod. Åtkomst nekas.");
       }
     }
 
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+      document.getElementById(tabId).style.display = 'block';
+      document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    }
+
+    function setDefaultDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
+      loadAvailableTimes();
+      loadBookings();
+    }
+
+    function setDefaultMonth() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      document.getElementById("monthPicker").value = `${yyyy}-${mm}`;
+      loadMonthlyBookings();
+    }
+
     function populateTimeDropdowns() {
       const startTimeDropdown = document.getElementById("startTime");
       const endTimeDropdown = document.getElementById("endTime");
+      startTimeDropdown.innerHTML = '';
+      endTimeDropdown.innerHTML = '';
 
       for (let hour = 8; hour <= 22; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
@@ -274,16 +335,6 @@
       }
     }
 
-    async function deleteAvailableTime(date, timeSlot) {
-      try {
-        await db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete();
-        alert("Tid raderad!");
-        loadAvailableTimes();
-      } catch (error) {
-        console.error("Fel vid radering av tid:", error);
-      }
-    }
-
     async function loadBookings() {
       const selectedDate = document.getElementById("datePicker").value;
       const bookingsContainer = document.getElementById("bookingsContainer");
@@ -302,12 +353,12 @@
 
               const timeDiv = document.createElement("div");
               timeDiv.className = "time-slot";
-              timeDiv.textContent = `Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade`;
+              timeDiv.innerHTML = `<strong>Tid: ${timeSlot} - ${bookings.length} av ${maxBookings} platser bokade</strong>`;
 
               bookings.forEach((booking, index) => {
                 const bookingInfo = document.createElement("div");
                 bookingInfo.className = "booking-info";
-                bookingInfo.textContent = booking.name;
+                bookingInfo.innerHTML = `<span>${booking.name} (${booking.phoneNumber})</span>`;
 
                 const deleteBookingButton = document.createElement("button");
                 deleteBookingButton.textContent = "Ta bort bokning";
@@ -324,6 +375,60 @@
         } catch (error) {
           console.error("Fel vid hämtning av bokningar:", error);
         }
+      }
+    }
+
+    async function loadMonthlyBookings() {
+      const monthPicker = document.getElementById("monthPicker").value;
+      if (!monthPicker) return;
+      const [year, month] = monthPicker.split("-");
+      const firstDayOfMonth = new Date(year, month - 1, 1);
+      const lastDayOfMonth = new Date(year, month, 0);
+      const totalDays = lastDayOfMonth.getDate();
+      const calendar = document.getElementById("calendar");
+      calendar.innerHTML = "";
+
+      const startDay = firstDayOfMonth.getDay();
+      for (let i = 0; i < startDay; i++) {
+        const emptyCell = document.createElement("div");
+        emptyCell.classList.add("day-cell", "empty");
+        calendar.appendChild(emptyCell);
+      }
+
+      for (let day = 1; day <= totalDays; day++) {
+        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayCell = document.createElement("div");
+        dayCell.classList.add("day-cell");
+        dayCell.innerHTML = `<strong>${day}</strong>`;
+
+        const snapshot = await db.collection("availableTimes").doc(date).collection("times").get();
+        if (!snapshot.empty) {
+          snapshot.forEach(doc => {
+            const bookings = doc.data().bookings || [];
+            bookings.forEach(booking => {
+              const bookingInfo = document.createElement("div");
+              bookingInfo.classList.add("booking-details");
+              bookingInfo.textContent = `${booking.name} - ${doc.id}`;
+              dayCell.appendChild(bookingInfo);
+            });
+          });
+        } else {
+          const noBookingInfo = document.createElement("div");
+          noBookingInfo.classList.add("booking-details");
+          noBookingInfo.textContent = "Inga bokningar";
+          dayCell.appendChild(noBookingInfo);
+        }
+        calendar.appendChild(dayCell);
+      }
+    }
+
+    async function deleteAvailableTime(date, timeSlot) {
+      try {
+        await db.collection("availableTimes").doc(date).collection("times").doc(timeSlot).delete();
+        alert("Tid raderad!");
+        loadAvailableTimes();
+      } catch (error) {
+        console.error("Fel vid radering av tid:", error);
       }
     }
 
@@ -346,21 +451,41 @@
       }
     }
 
-    function setDefaultDate() {
+    async function clearOldBookings() {
       const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("availableDate").value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
-      loadAvailableTimes();
-      loadBookings();
-    }
+      const cutoffDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); // En månad före innevarande månad
+      const formattedCutoffDate = cutoffDate.toISOString().split('T')[0];
+      console.log("Cutoff Date (formatted):", formattedCutoffDate);
 
-    window.onload = () => {
-      populateTimeDropdowns();
-      setDefaultDate();
-    };
+      try {
+        const timesSnapshot = await db.collectionGroup("times").get();
+        if (timesSnapshot.empty) {
+          console.log("No documents found in 'times' collection.");
+          return;
+        }
+
+        const deletePromises = [];
+        timesSnapshot.forEach((timeDoc) => {
+          const dateDocId = timeDoc.ref.parent.parent.id; // Få datumet för detta tidsdokument
+          const timeDocId = timeDoc.id; // Få tidsdokumentets ID
+          const bookings = timeDoc.data().bookings || [];
+          const docDate = new Date(dateDocId);
+
+          if (docDate < cutoffDate) {
+            // Om datumet är äldre än cutoff-datumet, radera tiden
+            deletePromises.push(timeDoc.ref.delete());
+            console.log(`Deleted time document: ${dateDocId}/${timeDocId}`);
+          }
+        });
+
+        // Vänta på att alla raderingar ska slutföras
+        await Promise.all(deletePromises);
+        alert("Bokningar och tider äldre än innevarande månad minus en månad har raderats.");
+        loadMonthlyBookings();
+      } catch (error) {
+        console.error("Fel vid radering av gamla bokningar:", error);
+      }
+    }
   </script>
 </body>
 </html>
