@@ -118,7 +118,7 @@
       <h2>Instruktioner</h2>
       <p>1. Välj ett datum för bokning.</p>
       <p>2. Klicka på en tillgänglig tid för att boka.</p>
-      <p>3. Ange ditt namn för att slutföra bokningen.</p>
+      <p>3. Ange ditt namn och telefonnummer för att slutföra bokningen.</p>
     </div>
     <h2>Välj en dag att boka:</h2>
     <label for="datePicker">Datum:</label>
@@ -150,7 +150,7 @@
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("datePicker").value = ${yyyy}-${mm}-${dd};
+      document.getElementById("datePicker").value = `${yyyy}-${mm}-${dd}`;
       loadTimeSlots(); 
     }
 
@@ -180,7 +180,7 @@
                     slotDiv.textContent += " - Fullbokad";
                     slotDiv.onclick = null; 
                   } else {
-                    slotDiv.textContent +=  - ${maxBookings - bookingsCount} platser kvar;
+                    slotDiv.textContent += ` - ${maxBookings - bookingsCount} platser kvar`;
                   }
                 } else {
                   slotDiv.textContent += " - 4 platser kvar";
@@ -206,7 +206,7 @@
         const yyyy = futureDate.getFullYear();
         const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
         const dd = String(futureDate.getDate()).padStart(2, '0');
-        const dateString = ${yyyy}-${mm}-${dd};
+        const dateString = `${yyyy}-${mm}-${dd}`;
 
         try {
           const snapshot = await db.collection("availableTimes").doc(dateString).collection("times").get();
@@ -228,7 +228,9 @@
 
     function bookTimeSlot(date, timeSlot) {
       const name = prompt("Ange ditt namn för att boka tiden:");
-      if (name) {
+      const phoneNumber = prompt("Ange ditt telefonnummer:");
+
+      if (name && phoneNumber) {
         const bookingRef = db.collection("availableTimes").doc(date).collection("times").doc(timeSlot);
 
         bookingRef.get().then((doc) => {
@@ -236,7 +238,7 @@
             const currentBookings = doc.data().bookings || [];
             const maxBookings = doc.data().maxBookings;
             if (currentBookings.length < maxBookings) {
-              currentBookings.push({ name: name, timestamp: new Date() });
+              currentBookings.push({ name: name, phoneNumber: phoneNumber, timestamp: new Date() });
               bookingRef.set({ ...doc.data(), bookings: currentBookings }).then(() => {
                 alert("Bokning lyckades!");
                 loadTimeSlots();
@@ -245,7 +247,7 @@
               alert("Denna tid är fullbokad.");
             }
           } else {
-            bookingRef.set({ bookings: [{ name: name, timestamp: new Date() }], maxBookings: 4 }).then(() => {
+            bookingRef.set({ bookings: [{ name: name, phoneNumber: phoneNumber, timestamp: new Date() }], maxBookings: 4 }).then(() => {
               alert("Bokning lyckades!");
               loadTimeSlots();
             });
@@ -253,6 +255,8 @@
         }).catch((error) => {
           console.error("Fel vid bokning: ", error);
         });
+      } else {
+        alert("Bokning avbröts. Vänligen fyll i både namn och telefonnummer.");
       }
     }
 
